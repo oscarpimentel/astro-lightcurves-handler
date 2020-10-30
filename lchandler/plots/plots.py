@@ -5,9 +5,9 @@ from . import C_
 import scipy
 import numpy as np
 import matplotlib.pyplot as plt
-import flamingchoripan.cutePlots.plots as cplots
-import flamingchoripan.cutePlots.colors as cc
-from .synth.synthetic_SNe_fun import SNE_fun_numpy as func
+import flamingchoripan.cuteplots.plots as cplots
+import flamingchoripan.cuteplots.colors as cc
+from ..synthetic.synthetic_SNe_fun import SNE_fun_numpy as func
 
 ###################################################################################################################################################
 
@@ -16,7 +16,7 @@ def plot_values_fit_distr_sampler(lcdataset, set_name:str, obse_sampler,
 	samples:int=None,
 	figsize:tuple=(12,5),
 	):
-	lcset = lcdataset.get(set_name)
+	lcset = lcdataset[set_name]
 	fig, axs = plt.subplots(1, len(lcset.band_names), figsize=figsize)
 	for kb,b in enumerate(lcset.band_names):
 		ax = axs[kb]
@@ -55,7 +55,7 @@ def plot_values_fit_results(lcdataset, set_name:str, fit_results:dict,
 	attr:str='obse',
 	figsize:tuple=(12,5),
 	):
-	lcset = lcdataset.get(set_name)
+	lcset = lcdataset[set_name]
 	fig, axs = plt.subplots(1, len(lcset.band_names), figsize=figsize)
 	for kb,b in enumerate(lcset.band_names):
 		ax = axs[kb]
@@ -103,7 +103,7 @@ def plot_len_fit_results(lcdataset, set_name:str, fit_results:dict,
 	attr:str='obse',
 	figsize:tuple=(12,5),
 	):
-	lcset = lcdataset.get(set_name)
+	lcset = lcdataset[set_name]
 	fig, axs = plt.subplots(1, len(lcset.band_names), figsize=figsize)
 	for kb,b in enumerate(lcset.band_names):
 		ax = axs[kb]
@@ -148,44 +148,46 @@ def plot_len_fit_results(lcdataset, set_name:str, fit_results:dict,
 	plt.show()
 
 def plot_sigma_distribution(lcdataset, set_name:str,
-	figsize:tuple=(12,5),
+	figsize:tuple=(15,10),
 	):
 	attr = 'obse'
 	return plot_values_distribution(lcdataset, set_name, attr, figsize)
 
 def plot_values_distribution(lcdataset, set_name:str, attr:str,
-	figsize:tuple=(12,5),
+	figsize:tuple=(15,10),
 	):
-	lcset = lcdataset.get(set_name)
-	fig, axes = plt.subplots(1, len(lcset.band_names), figsize=figsize)
+	lcset = lcdataset[set_name]
+	fig, axes = plt.subplots(len(lcset.class_names), len(lcset.band_names), figsize=figsize)
 	for kb,b in enumerate(lcset.band_names):
-		ax = axes[kb]
-		title = f'{C_.LONG_NAME_DICT[attr]} distribution {C_.SYMBOLS_DICT[attr]}\n'
-		title += f'survey: {lcset.survey} - set: {set_name} - band: {b}'
-		kwargs = {
-			'fig':fig,
-			'ax':ax,
-			'xlabel':C_.XLABEL_DICT[attr],
-			'ylabel':'' if kb==0 else None,
-			'title':title,
-			#'xlim':[0, 6],
-			'bins':80,
-			'uses_density':True,
-			'legend_loc':'upper right',
-		}
-		to_plot = {c:lcset.get_lcset_values_b(b, attr, c) for c in lcset.class_names}
-		fig, ax = cplots.plot_hist_bins(to_plot, **kwargs)
+		for kc,c in enumerate(lcset.class_names):
+			ax = axes[kc,kb]
+			to_plot = {c:lcset.get_lcset_values_b(b, attr, c)*100}
+			title = f'{C_.LONG_NAME_DICT[attr]} distribution {C_.SYMBOLS_DICT[attr]}\n'
+			title += f'survey: {lcset.survey} - set: {set_name} - band: {b}'
+			kwargs = {
+				'fig':fig,
+				'ax':ax,
+				'xlabel':C_.XLABEL_DICT[attr] if kc==len(lcset.class_names)-1 else None,
+				'ylabel':'' if kb==0 else None,
+				'title':title if kc==0 else '',
+				#'xlim':[0, 6],
+				'bins':80,
+				'uses_density':True,
+				'legend_loc':'upper right',
+				'cmap':cc.get_cmap(cc.get_default_colorlist()[kc:])
+			}
+			fig, ax = cplots.plot_hist_bins(to_plot, **kwargs)
 
-		### multiband colors
-		ax.grid(color=C_.COLOR_DICT[b])
-		[ax.spines[border].set_color(C_.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
-		[ax.spines[border].set_linewidth(2) for border in ['bottom', 'top', 'right', 'left']]
+			### multiband colors
+			ax.grid(color=C_.COLOR_DICT[b])
+			[ax.spines[border].set_color(C_.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
+			[ax.spines[border].set_linewidth(2) for border in ['bottom', 'top', 'right', 'left']]
 		
 	fig.tight_layout()
 	plt.show()
 
 def plot_class_distribution(
-	figsize=(10,5),
+	figsize=(15,10),
 	uses_log_scale:bool=False,
 	):
 	title = f'survey: {self.survey_name}\nclasses & curve points distributions'
