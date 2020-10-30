@@ -5,6 +5,23 @@ from . import C_
 import numpy as np
 import random
 import copy
+from flamingchoripan.datascience.statistics import get_sigma_clipping_indexing
+from flamingchoripan.prints import HiddenPrints, ShowPrints
+
+###################################################################################################################################################
+
+def search_over_sigma_samples(lcset, b:str, dist_mean, dist_sigma, sigma_m,
+	apply_lower_bound:bool=True,
+	):
+	total_deleted_points = 0
+	for lcobj_name in lcset.get_lcobj_names():
+		sigmas = lcset[lcobj_name].get_b(b).obse # get
+		valid_indexs = get_sigma_clipping_indexing(sigmas, dist_mean, dist_sigma, sigma_m, apply_lower_bound)
+		deleted_points = (~valid_indexs).astype(int).sum()
+		total_deleted_points += deleted_points
+		lcset.data[lcobj_name].get_b(b).apply_valid_indexs_to_attrs(valid_indexs) # set
+
+	return total_deleted_points
 
 ###################################################################################################################################################
 
@@ -46,7 +63,7 @@ class LCDataset():
 
 	def split(self, to_split_lcset_name, new_lcsets):
 		'''stratified'''
-		assert sum([new_lcsets[k] for k in new_lcsets.keys()])==1
+		assert sum([new_lcsets[k] for k in new_lcsets.keys()])==1.
 		assert len(new_lcsets.keys())>=2
 
 		to_split_lcset = self[to_split_lcset_name]
@@ -70,6 +87,37 @@ class LCDataset():
 					self[new_lcset_name].data.update({lcobj_name:lcobj})
 
 		return
+
+	### sigma clipping
+
+	def sigma_clipping(self, lcset_name, new_lcset_name,
+		sigma_n:int=1,
+		sigma_m:float=3.,
+		apply_lower_bound:bool=True,
+		verbose:int=1,
+		):
+		printClass = ShowPrints if verbose else HiddenPrints
+		with printClass():
+			lcset = self.set_lcset(new_lcset_name, self[lcset_name].copy())
+			print(f'survey: {lcset.survey} - after processing: {lcset_name} (>{new_lcset_name})')
+			total_deleted_points = {b:0 for b in lcset.band_names}
+			for k in range(sigma_n):
+				print(f'k: {k}')
+				for b in lcset.band_names:
+					sigma_values = lcset.get_lcset_values_b(b, 'obse')
+					sigma_samples = len(sigma_values)
+					mean = np.mean(sigma_values)
+					sigma = np.std(sigma_values)
+					deleted_points = search_over_sigma_samples(lcset, b, mean, sigma, sigma_m, apply_lower_bound)
+					print(f'\tband: {b} - sigma_samples: {sigma_samples:,} - mean: {mean} - std: {sigma}')
+					print(f'\tdeleted_points: {deleted_points:,}')
+					total_deleted_points[b] += deleted_points
+		
+			lcset.clean_empty_obs_keys()
+			lcset.reset_day_offset_serial()
+			sigma_samples = len(lcset.get_lcset_values_b(b, 'obse'))
+			print(f'sigma_samples: {sigma_samples:,} - total_deleted_points: {total_deleted_points}')
+		return total_deleted_points
 
 ###################################################################################################################################################
 
@@ -165,7 +213,7 @@ class LCSet():
 		max_duration = max([lcobj.get_days_serial_duration() for lcobj in self.get_lcobjs()])
 
 		txt = f'samples: {len(self):,} - obs samples: {obs_len:,} ({obs_len_txt})\n'
-		txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}\n'
+		txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}[days]\n'
 		populations_cdict = self.get_populations_cdict()
 		total_population = sum([populations_cdict[k] for k in populations_cdict.keys()])
 		txt += f' - population: '+' - '.join([f'{k}: {populations_cdict[k]:,}({populations_cdict[k]/total_population*100:.2f}%)' for k in populations_cdict.keys()])
@@ -208,6 +256,8 @@ class LCSet():
 		min_index = np.argmin([pop_cdict[c] for c in self.class_names])
 		min_populated_class = self.class_names[min_index]
 		min_population = pop_cdict[min_populated_class]
+		obs_len_txt = ' - '.join([f'{b}: {obs_len_dict[b]:,}' for b in self.band_names])
+		max_duration = max([lcobj.get_days_serial_duration() for lcobj in self.get_lcobjs()])
 		return min_populated_class, min_population
 
 	def get_random_keys(self, nc):
@@ -227,8 +277,7 @@ class LCSet():
 	def get_lcset_values_b(self, b:str, attr:str,
 		target_class:str=None,
 		):
-		keys = self.data_keys()
-		values = [getattr(self.data[key].get_b(b), attr) for key in keys if (target_class is None or target_class==self.class_names[self.data[key].y])]
+		values = [getattr(lcobj.get_b(b), attr) for lcobj in self.get_lcobjs() if (target_class is None or target_class==self.class_names[lcobj.y])]
 		values = np.concatenate(values, axis=0)
 		return values
 
@@ -253,5 +302,5 @@ class LCSet():
 		'''
 		Along all keys
 		'''
-		for key in self.data_keys():
-			self.data[key].reset_day_offset_serial(store_day_offset)
+		for lcobj in self.get_lcobjs():
+			lcobj.reset_day_offset_serial(store_day_offset)
