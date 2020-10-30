@@ -168,7 +168,7 @@ class LCSet():
 		txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}\n'
 		populations_cdict = self.get_populations_cdict()
 		total_population = sum([populations_cdict[k] for k in populations_cdict.keys()])
-		txt += f' - population: '+' - '.join([f'{k}: {populations_cdict[k]:,}({populations_cdict[k]/total_population*100:.1f}%)' for k in populations_cdict.keys()])
+		txt += f' - population: '+' - '.join([f'{k}: {populations_cdict[k]:,}({populations_cdict[k]/total_population*100:.2f}%)' for k in populations_cdict.keys()])
 		return txt
 
 	def __len__(self):
