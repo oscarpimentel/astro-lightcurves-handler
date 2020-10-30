@@ -152,18 +152,18 @@ class LightCurveDictionaryCreator():
 
 	#################################### EXPORT
 
-	def get_label(self, labels_df:pd.DataFrame, obj_name:str, easy_label_dict:dict):
+	def get_label(self, labels_df:pd.DataFrame, lcobj_name:str, easy_label_dict:dict):
 		try:
-			label = labels_df[self.df_index_names['label']][obj_name]
+			label = labels_df[self.df_index_names['label']][lcobj_name]
 			uint_label = easy_label_dict[label]
 			return uint_label, True
 		except:
 			return None, False
 
-	def get_radec(self, labels_df:pd.DataFrame, obj_name:str):
+	def get_radec(self, labels_df:pd.DataFrame, lcobj_name:str):
 		try:
-			ra = labels_df[self.df_index_names['ra']][obj_name]
-			dec = labels_df[self.df_index_names['dec']][obj_name]
+			ra = labels_df[self.df_index_names['ra']][lcobj_name]
+			dec = labels_df[self.df_index_names['dec']][lcobj_name]
 			return ra, dec
 		except:
 			return None, None
@@ -179,9 +179,9 @@ class LightCurveDictionaryCreator():
 		class_dfkey = self.df_index_names['label']
 		band_dfkey = self.df_index_names['band']
 
-		obj_names = list(self.labels_df[class_dfkey].keys().values)
-		obj_names.sort()
-		print(f'obj_names examples: {obj_names[:10]}')
+		lcobj_names = list(self.labels_df[class_dfkey].keys().values)
+		lcobj_names.sort()
+		print(f'lcobj_names examples: {lcobj_names[:10]}')
 
 		# separate bands for optimal
 		to_export_bands = (list(self.band_dictionary.keys()) if to_export_bands is None else to_export_bands)
@@ -204,7 +204,7 @@ class LightCurveDictionaryCreator():
 		print(f'remove_invalid_bands - samples: {len(detections_df):,}')
 		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
 
-		detections_df = detections_df.loc[detections_df[self.df_index_names['oid']].isin(obj_names)]
+		detections_df = detections_df.loc[detections_df[self.df_index_names['oid']].isin(lcobj_names)]
 		print(f'remove_invalid_classes - samples: {len(detections_df):,}')
 		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
 
@@ -223,7 +223,7 @@ class LightCurveDictionaryCreator():
 		detections_dd = dd.from_pandas(detections_df, npartitions=npartitions)
 
 		# PREPARE NEW DATASET
-		lcset = lcdc.LCSet(
+		lcset = dsc.LCSet(
 			{},
 			self.survey_name,
 			description,
@@ -231,8 +231,8 @@ class LightCurveDictionaryCreator():
 			self.classes_names,
 			True,
 		)
-		lcdataset = lcdc.LCDataset()
-		lcdataset.set_raw(lcset)
+		lcdataset = dsc.LCDataset()
+		lcdataset.set_lcset('raw', lcset)
 
 		# GET FILENAME
 		filename_parameters = {
@@ -250,16 +250,16 @@ class LightCurveDictionaryCreator():
 		# START LOOP
 		correct_samples = 0
 		calculated_cache = 0
-		bar = ProgressBar(len(obj_names))
-		for i,obj_name in enumerate(obj_names):
+		bar = ProgressBar(len(lcobj_names))
+		for i,lcobj_name in enumerate(lcobj_names):
 			try:
-				lcobj = lcdc.LCO()
+				lcobj = lcc.LCO()
 				pass_cond = False
 				calculated_cache += 1
 				y = None
 				lengths = None
 				try:
-					obj_df = detections_dd.loc[[obj_name]].compute() # FAST
+					obj_df = detections_dd.loc[[lcobj_name]].compute() # FAST
 					for kb,b in enumerate(to_export_bands):
 						band_object_df = obj_df[obj_df[band_dfkey] == self.band_dictionary[b]]
 						original_lc = band_object_df[[self.df_index_names['obs_day'], self.df_index_names['obs'], self.df_index_names['obs_error']]].values.astype(np.float32)
@@ -273,7 +273,7 @@ class LightCurveDictionaryCreator():
 					lengths_cond = np.any([len(lcobj.get_b(b))>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in to_export_bands])
 
 					### get label
-					y, y_cond = self.get_label(self.labels_df, obj_name, easy_label_dict)
+					y, y_cond = self.get_label(self.labels_df, lcobj_name, easy_label_dict)
 					lcobj.set_y(y)
 					pass_cond = lengths_cond and y_cond
 
@@ -282,13 +282,13 @@ class LightCurveDictionaryCreator():
 
 				if pass_cond:
 					lengths_bdict = lcobj.get_length_bdict()
-					ra, dec = self.get_radec(self.labels_df, obj_name)
+					ra, dec = self.get_radec(self.labels_df, lcobj_name)
 					lcobj.ra = ra
 					lcobj.dec = dec
-					lcdataset.raw.data[obj_name] = lcobj
+					lcdataset['raw'].set_lcobj(lcobj_name, lcobj)
 					correct_samples += 1
 				
-				text = f'obj: {obj_name} - y: {y} - lengths_bdict: {lengths_bdict}'
+				text = f'obj: {lcobj_name} - y: {y} - lengths_bdict: {lengths_bdict}'
 				text += f' - pass_cond: {pass_cond} - correct_samples: {correct_samples:,}'
 				
 				bar(text)

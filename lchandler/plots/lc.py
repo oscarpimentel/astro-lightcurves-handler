@@ -4,7 +4,7 @@ from . import C_
 
 import numpy as np
 import matplotlib.pyplot as plt
-import flamingchoripan.myUtils.lists as lists
+import flamingchoripan.lists as lists
 
 ###################################################################################################################################################
 

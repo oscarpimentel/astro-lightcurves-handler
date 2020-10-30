@@ -10,51 +10,29 @@ import copy
 
 class LCDataset():
 	def __init__(self):
-		self.raw = None
-		self.train = None
-		self.val = None
-		self.test = None
-		self.raw_train = None
-		self.raw_val = None
-		self.raw_test = None
+		self.lcsets = {}
 
-	def set_custom(self, name:str, lcset):
-		setattr(self, name, lcset)
+	def set_lcset(self, lcset_name:str, lcset):
+		self.lcsets[lcset_name] = lcset
 		return lcset
 
-	def set_raw(self, lcset):
-		return self.set_custom('raw', lcset)
+	def get_lcset_names(self):
+		return list(self.lcsets.keys())
 
-	def set_raw_train(self, lcset):
-		return self.set_custom('raw_train', lcset)
+	def exists(self, lcset_name):
+		return lcset_name in self.get_lcset_names()
 
-	def set_raw_val(self, lcset):
-		return self.set_custom('raw_val', lcset)
+	def del_lcset(self, lcset_name):
+		self.lcsets.pop(lcset_name, None)
 
-	def set_raw_test(self, lcset):
-		return self.set_custom('raw_test', lcset)
-
-	def set_train(self, lcset):
-		return self.set_custom('train', lcset)
-
-	def set_val(self, lcset):
-		return self.set_custom('val', lcset)
-
-	def set_test(self, lcset):
-		return self.set_custom('test', lcset)
-
-	def del_set(self, name):
-		setattr(self, name, None)
-
-	def get(self, set_name):
-		return getattr(self, set_name)
+	def __getitem__(self, lcset_name):
+		return self.lcsets[lcset_name]
 
 	def __repr__(self):
-		txt = 'LCDataset():\n'
-		for key in self.__dict__.keys():
-			lcset = self.__dict__[key]
-			set_text = lcset if not lcset is None else '-'
-			txt += f'({key}) - {set_text}\n'
+		txt = 'LCDataset(\n'
+		for lcset_name in self.get_lcset_names():
+			txt += f'({lcset_name})\n - {self[lcset_name]}\n'
+		txt += ')'
 		return txt
 
 	def clean_empty_obs_keys(self):
@@ -62,25 +40,36 @@ class LCDataset():
 		Along all lcsets
 		Use this to delete empty light curves: 0 obs in all bands
 		'''
-		for key in self.__dict__.keys():
-			lcset = self.__dict__[key]
-			deleted_keys = lcset.clean_empty_obs_keys(verbose=0)
-			print(f'({key}) deleted keys: {deleted_keys}')
+		for lcset_name in self.get_lcset_names():
+			deleted_keys = self[lcset_name].clean_empty_obs_keys(verbose=0)
+			print(f'({lcset_name}) deleted keys: {deleted_keys}')
 
-	def split_lcdataset(self, lcdataset,
-		train_size:float=0.8,
-		):
-		train_populations_dict = {c:int(lcdataset.raw.get_populations()[c]*train_size) for c in lcdataset.raw.class_names}
+	def split(self, to_split_lcset_name, new_lcsets):
+		'''stratified'''
+		assert sum([new_lcsets[k] for k in new_lcsets.keys()])==1
+		assert len(new_lcsets.keys())>=2
 
-		lcdataset.set_raw_train(lcdataset.raw.copy({}))
-		lcdataset.set_raw_val(lcdataset.raw.copy({}))
-		
-		for kc,c in enumerate(lcdataset.raw.class_names):
-			class_keys = [key for key in lcdataset.raw.data_keys() if lcdataset.raw.data[key].y==kc]
-			nct = train_populations_dict[c]
-			train_keys, val_keys = class_keys[:nct], class_keys[nct:]
-			[lcdataset.raw_train.data.update({key:lcdataset.raw.data[key].copy()}) for key in train_keys]
-			[lcdataset.raw_val.data.update({key:lcdataset.raw.data[key].copy()}) for key in val_keys]
+		to_split_lcset = self[to_split_lcset_name]
+		lcobj_names = self[to_split_lcset_name].get_lcobj_names()
+		random.shuffle(lcobj_names)
+		to_split_lcset_data = {k:self[to_split_lcset_name].data[k] for k in lcobj_names}
+		populations_cdict = to_split_lcset.get_populations_cdict()
+		class_names = to_split_lcset.class_names
+
+		for k,new_lcset_name in enumerate(new_lcsets.keys()):
+			self.set_lcset(new_lcset_name, to_split_lcset.copy({}))
+			for c in class_names:
+				to_fill_pop = int(populations_cdict[c]*new_lcsets[new_lcset_name])
+				lcobj_names = np.array(list(to_split_lcset_data.keys()))
+				lcobj_classes = np.array([class_names[to_split_lcset_data[lcobj_name].y] for lcobj_name in lcobj_names])
+				valid_indexs = np.where(lcobj_classes==c)[0][:to_fill_pop] if k<=len(new_lcsets.keys())-2 else np.where(lcobj_classes==c)[0]
+				lcobj_names = lcobj_names[valid_indexs].tolist()
+
+				for lcobj_name in lcobj_names:
+					lcobj = to_split_lcset_data.pop(lcobj_name)
+					self[new_lcset_name].data.update({lcobj_name:lcobj})
+
+		return
 
 ###################################################################################################################################################
 
@@ -100,64 +89,92 @@ class LCSet():
 		self.class_names = class_names.copy()
 		self.obs_is_flux = obs_is_flux
 
+	def __getitem__(self, lcobj_name):
+		return self.data[lcobj_name]
+
+	def get_lcobj_names(self):
+		return list(self.data.keys())
+
+	def get_lcobjs(self):
+		return [self[lcobj_name] for lcobj_name in self.get_lcobj_names()]
+
 	def clean_empty_obs_keys(self,
 		verbose:int=1,
 		):
-		to_delete_keys = [key for key in self.data.keys() if not np.any([len(self.data[key].get_b(b))>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in self.band_names])]
-		deleted_keys = len(to_delete_keys)
-		if verbose:
-			print('deleted keys:', deleted_keys)
-		for key in to_delete_keys:
-			self.data.pop(key, None)
-		return deleted_keys
+		to_delete_lcobj_names = [lcobj_name for lcobj_name in self.get_lcobj_names() if not np.any([len(self[lcobj_name].get_b(b))>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in self.band_names])]
+		deleted_lcobjs = len(to_delete_lcobj_names)
 
-	def get_random_key(self):
-		keys = list(self.data.keys())
-		return keys[random.randint(0, len(keys)-1)]
+		if verbose:
+			print(f'deleted lcobjs: {deleted_lcobjs}')
+
+		for lcobj_name in to_delete_lcobj_names:
+			self.data.pop(lcobj_name, None)
+
+		return deleted_lcobjs
+
+	def get_random_lcobj_name(self):
+		lcobj_names = self.get_lcobj_names()
+		return lcobj_names[random.randint(0, len(lcobj_names)-1)]
 
 	def get_random_lcobj(self,
 		return_key:bool=True,
 		):
-		key = self.get_random_key()
+		lcobj_name = self.get_random_lcobj_name()
 		if return_key:
-			return self.data[key], key
-		return self.data[key]
+			return self[lcobj_name], lcobj_name
+		return self[lcobj_name]
+
+	def set_lcobj(self, lcobj_name, lcobj):
+		self.data[lcobj_name] = lcobj
 
 	def set_diff_parallel(self, attr:str):
 		'''
 		Along all keys
 		'''
-		for key in self.data_keys():
-			self.data[key].set_diff_parallel(attr)
+		for lcobj_name in self.get_lcobj_names():
+			self[lcobj_name].set_diff_parallel(attr)
 
 	def set_log_parallel(self, attr:str):
 		'''
 		Along all keys
 		'''
-		for key in self.data_keys():
-			self.data[key].set_log_parallel(attr)
+		for lcobj_name in self.get_lcobj_names():
+			self[lcobj_name].set_log_parallel(attr)
 
 	def keys(self):
 		return self.__dict__.keys()
 
-	def data_keys(self):
-		return list(self.data.keys())
-
 	def get_lcobj_labels(self):
-		return [self.data[key].y for key in self.data.keys()]
+		return [lcobj.y for lcobj in self.get_lcobjs()]
 
 	def get_lcobj_classes(self):
 		'''
 		Used for classes histogram
 		'''
-		return [self.class_names[self.data[key].y] for key in self.data.keys()]
+		return [self.class_names[y] for y in self.get_lcobj_labels()]
 
-	def get_lcobj_obsmean_classes_b(self, b:str):
-		population_dict = self.get_populations()
-		uniques, counts = np.unique(self.get_lcobj_obs_classes_b(b), return_counts=True)
-		return {c:counts[list(uniques).index(c)]/population_dict[c] for c in self.class_names}
+	def get_populations_cdict(self):
+		lcobj_classes = self.get_lcobj_classes()
+		uniques, counts = np.unique(lcobj_classes, return_counts=True)
+		return {c:counts[list(uniques).index(c)] for c in self.class_names}
 
-	def get_lcobj_obs_classes_b(self, b:str):
+	def __repr__(self):
+		obs_len = sum([len(lcobj) for lcobj in self.get_lcobjs()])
+		obs_len_dict = {b:sum([len(lcobj.get_b(b)) for lcobj in self.get_lcobjs()]) for b in self.band_names}
+		obs_len_txt = ' - '.join([f'{b}: {obs_len_dict[b]:,}' for b in self.band_names])
+		max_duration = max([lcobj.get_days_serial_duration() for lcobj in self.get_lcobjs()])
+
+		txt = f'samples: {len(self):,} - obs samples: {obs_len:,} ({obs_len_txt})\n'
+		txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}\n'
+		populations_cdict = self.get_populations_cdict()
+		total_population = sum([populations_cdict[k] for k in populations_cdict.keys()])
+		txt += f' - population: '+' - '.join([f'{k}: {populations_cdict[k]:,}({populations_cdict[k]/total_population*100:.1f}%)' for k in populations_cdict.keys()])
+		return txt
+
+	def __len__(self):
+		return len(self.get_lcobj_names())
+
+	def get_lcobj_obs_classes_b_cdict(self, b:str):
 		'''
 		Used for obs histogram
 		'''
@@ -165,8 +182,10 @@ class LCSet():
 		classes = sum(classes, []) # flat lists
 		return classes
 
-	def __len__(self):
-		return len(self.data.keys())
+	def get_lcobj_obsmean_b_cdict(self, b:str):
+		population_dict = self.get_populations_cdict()
+		uniques, counts = np.unique(self.get_lcobj_obs_classes_b(b), return_counts=True)
+		return {c:counts[list(uniques).index(c)]/population_dict[c] for c in self.class_names}
 
 	def get_max_length_serial(self):
 		return max([len(self.data[key]) for key in self.data.keys()])
@@ -184,11 +203,6 @@ class LCSet():
 			)
 		return new_set
 
-	def get_populations(self):
-		lcobj_classes = self.get_lcobj_classes()
-		uniques, counts = np.unique(lcobj_classes, return_counts=True)
-		return {c:counts[list(uniques).index(c)] for c in self.class_names}
-
 	def get_min_population(self):
 		pop_cdict = self.get_populations()
 		min_index = np.argmin([pop_cdict[c] for c in self.class_names])
@@ -196,18 +210,8 @@ class LCSet():
 		min_population = pop_cdict[min_populated_class]
 		return min_populated_class, min_population
 
-	def __repr__(self):
-		obs_len = sum([len(self.data[key]) for key in self.data_keys()])
-		obs_len_dict = {b:sum([len(self.data[key].get_b(b)) for key in self.data_keys()]) for b in self.band_names}
-		obs_len_txt = ' - '.join([f'{b}: {obs_len_dict[b]:,}' for b in self.band_names])
-		max_duration = max([self.data[key].get_days_serial_duration() for key in self.data_keys()])
-
-		txt = f'samples: {len(self):,} - obs samples: {obs_len:,} ({obs_len_txt})'
-		txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}'
-		#txt += f' - bands: {self.band_names} - classes: {self.class_names} '
-		return txt
-
-	def get_random_keys(self, nc): # stratified
+	def get_random_keys(self, nc):
+		'''stratified'''
 		d = {c:[] for c in self.class_names}
 		keys = random.sample(self.data.keys(), len(self.data.keys()))
 		index = 0
@@ -225,7 +229,7 @@ class LCSet():
 		):
 		keys = self.data_keys()
 		values = [getattr(self.data[key].get_b(b), attr) for key in keys if (target_class is None or target_class==self.class_names[self.data[key].y])]
-		values = np.concatenate(values, axis=0)#.astype(values[0].dtype)
+		values = np.concatenate(values, axis=0)
 		return values
 
 	def get_lcset_max_value_b(self, b:str, attr,
@@ -241,7 +245,7 @@ class LCSet():
 		Get values of attr along all bands
 		'''
 		values = [self.get_lcset_values_b(b, attr, target_class) for b in self.band_names]
-		return np.concatenate(values, axis=0)#.astype(values[0].dtype)
+		return np.concatenate(values, axis=0)
 
 	def reset_day_offset_serial(self,
 		store_day_offset:bool=False,
