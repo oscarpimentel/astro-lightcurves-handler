@@ -3,15 +3,16 @@ from __future__ import division
 from . import C_
 
 import numpy as np
-import flamingchoripan.cutePlots.plots as cplots
+import flamingchoripan.cuteplots.plots as cplots
 from dask import dataframe as dd
-from flamingchoripan.myUtils.progress_bars import ProgressBar
+from flamingchoripan.progress_bars import ProgressBar
 import matplotlib.pyplot as plt
-from flamingchoripan.myUtils.files import save_pickle, load_pickle
-import flamingchoripan.cutePlots.colors as cc
-from .flux_magnitude import get_flux_from_magnitude, get_flux_error_from_magnitude
-from .flux_magnitude import get_magnitude_from_flux, get_magnitude_error_from_flux
-import astrolightcurveshandler.src.data_classes as lcdc # auxiliar import
+from flamingchoripan.files import save_pickle, load_pickle
+import flamingchoripan.cuteplots.colors as cc
+from ..flux_magnitude import get_flux_from_magnitude, get_flux_error_from_magnitude
+from ..flux_magnitude import get_magnitude_from_flux, get_magnitude_error_from_flux
+import lchandler.dataset_classes as dsc
+import lchandler.lc_classes as lcc
 import pandas as pd
 import copy
 

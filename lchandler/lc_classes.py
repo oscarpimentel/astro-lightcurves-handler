@@ -20,6 +20,8 @@ def log_vector(x:np.ndarray):
 	assert np.all(x>=0)
 	return np.log(x+1).astype(np.float32)
 
+###################################################################################################################################################
+
 class SubLCO():
 	'''
 	Dataclass object used to store an astronomical light curve

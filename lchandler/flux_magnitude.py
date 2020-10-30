@@ -1,14 +1,16 @@
 from __future__ import print_function
+from __future__ import division
+from . import C_
 
 import numpy as np
-from . import C_
+
+###################################################################################################################################################
+
 '''
-aproximation... not used
+not used aproximation:
 http://slittlefair.staff.shef.ac.uk/teaching/phy217/lectures/stats/L18/index.html
 https://www.nde-ed.org/GeneralResources/ErrorAnalysis/UncertaintyTerms.htm
 '''
-
-EPS = 1e-12
 
 def get_flux_from_magnitude(mag:np.ndarray,
 	zero_point:float=C_.DEFAULT_ZP,
