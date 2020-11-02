@@ -48,7 +48,7 @@ class LCDataset():
 	def __repr__(self):
 		txt = 'LCDataset(\n'
 		for lcset_name in self.get_lcset_names():
-			txt += f'({lcset_name})\n - {self[lcset_name]}\n'
+			txt += f'({lcset_name} - samples {len(self[lcset_name]):,})\n - {self[lcset_name]}\n'
 		txt += ')'
 		return txt
 
@@ -61,13 +61,16 @@ class LCDataset():
 			deleted_keys = self[lcset_name].clean_empty_obs_keys(verbose=0)
 			print(f'({lcset_name}) deleted keys: {deleted_keys}')
 
-	def split(self, to_split_lcset_name, new_lcsets):
+	def split(self, to_split_lcset_name, new_lcsets,
+		random_state=42,
+		):
 		'''stratified'''
 		assert sum([new_lcsets[k] for k in new_lcsets.keys()])==1.
 		assert len(new_lcsets.keys())>=2
 
 		to_split_lcset = self[to_split_lcset_name]
 		lcobj_names = self[to_split_lcset_name].get_lcobj_names()
+		random.seed(random_state)
 		random.shuffle(lcobj_names)
 		to_split_lcset_data = {k:self[to_split_lcset_name].data[k] for k in lcobj_names}
 		populations_cdict = to_split_lcset.get_populations_cdict()
@@ -232,7 +235,7 @@ class LCSet():
 
 	def get_lcobj_obsmean_b_cdict(self, b:str):
 		population_dict = self.get_populations_cdict()
-		uniques, counts = np.unique(self.get_lcobj_obs_classes_b(b), return_counts=True)
+		uniques, counts = np.unique(self.get_lcobj_obs_classes_b_cdict(b), return_counts=True)
 		return {c:counts[list(uniques).index(c)]/population_dict[c] for c in self.class_names}
 
 	def get_max_length_serial(self):

@@ -44,7 +44,7 @@ class SubLCO():
 
 	def set_days(self, days):
 		assert len(days.shape)==1
-		assert np.all(diff_vector(days)>=0) # check days are in order
+		assert np.all(diff_vector(days)>=0) # check if days are in order
 		self.days = days.astype(np.float32)
 
 	def set_obs(self, obs):
