@@ -55,7 +55,7 @@ def extract_arrays(lcobjb):
 ###################################################################################################################################################
 
 class FakeSNeGeneratorCF():
-	def __init__(self, lcobj, band_names, obse_sampler, len_sampler,
+	def __init__(self, lcobj, band_names, obse_sampler_bdict, length_sampler_bdict,
 		pow_obs_error:bool=True,
 		replace_nan_inf:bool=True,
 		max_obs_error:float=1e10,
@@ -70,8 +70,8 @@ class FakeSNeGeneratorCF():
 		self.pm_features = ['A', 't0', 'gamma', 'f', 'trise', 'tfall']
 		self.lcobj = lcobj.copy()
 		self.band_names = band_names.copy()
-		self.obse_sampler = obse_sampler
-		self.len_sampler = len_sampler
+		self.obse_sampler_bdict = obse_sampler_bdict
+		self.length_sampler_bdict = length_sampler_bdict
 		
 		self.pow_obs_error = pow_obs_error
 		self.replace_nan_inf = replace_nan_inf,
@@ -231,7 +231,7 @@ class FakeSNeGeneratorCF():
 		return new_lcobjs
 
 	def sample_curve_b(self, b, n):
-		curve_lengths = self.len_sampler.sample(n, b)
+		curve_lengths = self.length_sampler_bdict[b].sample(n)
 		new_lcobjbs = []
 		for k in range(n):
 			try:
@@ -272,7 +272,7 @@ class FakeSNeGeneratorCF():
 				continue
 
 			### resampling obs using obs error
-			new_obse = self.obse_sampler.sample(new_len_b, b)
+			new_obse = self.obse_sampler_bdict[b].conditional_sample(pm_obs)
 			new_obs = np.clip(np.random.normal(pm_obs, new_obse*self.std_scale), 0, None)
 			if new_obs.max()>=lcobjb.obs.max()*max_obs_threshold_scale: # can't be too high
 				continue
