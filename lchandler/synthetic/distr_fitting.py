@@ -75,10 +75,9 @@ class ObsErrorConditionalSampler():
 			'n_quantiles':min(1000, len(obse_values)),
 			'output_distribution':'normal',
 		}
-		#scaler = QuantileTransformer(**scaler_kwargs)
+		#scaler = prep.QuantileTransformer(**scaler_kwargs)
 		scaler = prep.MinMaxScaler(feature_range=(0+eps, 1-eps))
-		#scaler = MinMaxScaler(feature_range=((-obse_values).min(), (-obse_values).max()))
-		#scaler = StandardScaler()
+		#scaler = prep.StandardScaler()
 		
 		obse_values = scaler.fit_transform(-obse_values[:,None])[:,0]
 		if distr_name=='beta':
