@@ -11,6 +11,8 @@ import pymc3 as pm
 
 ###################################################################################################################################################
 
+def override(func): return func
+
 def sgm(x:float):
 	return 1/(1 + np.exp(-x))
 
@@ -340,8 +342,8 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 
 	def get_mcmc_traces(self, b, n,
 		cores=2,
-		n_tune=2000,
-		n_samples=5000,
+		n_tune=1000,
+		n_samples=2000,
 		):
 		lcobjb = self.lcobj.get_b(b).copy() # copy
 		days, obs, obs_error = extract_arrays(lcobjb)
@@ -382,11 +384,12 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 				#step = pm.Metropolis()
 				#step = pm.NUTS()
 				mcmc_trace = pm.sample(n_samples, **trace_kwargs)
-			except:
+			except ValueError:
 				raise ex.MCMCError()
 
 		return mcmc_trace, lcobjb, n_samples
 
+	@override
 	def sample_curve_b(self, b, n,
 		uses_pm_obs:bool=False,
 		):

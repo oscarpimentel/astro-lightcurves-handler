@@ -11,7 +11,7 @@ from flamingchoripan.datascience.statistics import dropout_extreme_percentiles, 
 
 class ObsErrorConditionalSampler():
 	def __init__(self, lcdataset:dict, set_name:str, b:str,
-		samples_per_range:int=50,
+		samples_per_range:int=30,
 		):
 		self.lcdataset = lcdataset
 		self.lcset = lcdataset[set_name]
@@ -20,6 +20,7 @@ class ObsErrorConditionalSampler():
 		self.raw_obse = np.concatenate([lcobj.get_b(b).obse for lcobj in self.lcset.get_lcobjs()])
 		self.raw_obs = np.concatenate([lcobj.get_b(b).obs for lcobj in self.lcset.get_lcobjs()])
 		self.min_obs = self.raw_obs.min()
+		assert self.min_obs>=0
 		self.reset()
 		
 	def get_m_n(self):
