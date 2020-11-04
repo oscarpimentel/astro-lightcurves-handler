@@ -188,26 +188,7 @@ def plot_values_distribution(lcdataset, set_name:str, attr:str,
 	fig.tight_layout()
 	plt.show()
 
-def plot_class_distribution(
-	figsize=(15,10),
-	uses_log_scale:bool=False,
-	):
-	title = f'survey: {self.survey_name}\nclasses & curve points distributions'
-	label_samples = self.labels_df[self.df_index_names['label']].values
-	label_names = print(np.unique(label_samples))
-
-	equiv = self.labels_df[self.df_index_names['label']].to_dict()
-	#print(equiv)
-	#assert 0
-	curve_points_samples = self.detections_df.reset_index()[self.df_index_names['oid']].map(equiv).dropna()
-	curve_points_samples = curve_points_samples.values
-	to_plot = {
-		'class samples':label_samples,
-		'curve points samples':curve_points_samples,
-	}
-	fig, ax = plot_hist_labels(to_plot, self.classes_names, title=title, figsize=figsize, uses_log_scale=uses_log_scale)
-	fig.tight_layout()
-	plt.show()
+###################################################################################################################################################
 
 def plot_mcmc_trace(mcmc_trace_bdict, b):
 	mcmc_trace = mcmc_trace_bdict[b]
