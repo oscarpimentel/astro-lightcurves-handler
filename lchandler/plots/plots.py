@@ -8,6 +8,43 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import flamingchoripan.cuteplots.plots as cplots
 import flamingchoripan.cuteplots.colors as cc
+import arviz as az
+import pymc3 as pm
+
+###################################################################################################################################################
+
+def plot_obs_obse_scatter(lcdataset, set_name1, set_name2,
+	figsize:tuple=(12,8),
+	alpha=0.2,
+	markersize=2,
+	):
+	fig, axs = plt.subplots(1, 2, figsize=figsize)
+	lcset1 = lcdataset[set_name1]
+	lcset2 = lcdataset[set_name2]
+	band_names = lcset2.band_names
+	for kb,b in enumerate(band_names):
+		ax = axs[kb]
+		ax.plot(lcset1.get_lcset_values_b(b, 'obse'), lcset1.get_lcset_values_b(b, 'obs'), 'k.', markersize=markersize, alpha=alpha)
+		ax.plot(np.nan, np.nan, 'k.', alpha=1, label=f'original samples {set_name1}')
+
+		ax.plot(lcset2.get_lcset_values_b(b, 'obse'), lcset2.get_lcset_values_b(b, 'obs'), 'r.', markersize=markersize, alpha=alpha)
+		ax.plot(np.nan, np.nan, 'r.', alpha=1, label=f'original samples {set_name2}')
+
+		title = f'survey:{lcset1.survey} - set: {set_name1}/{set_name2} - band: {b}'
+		ax.set_title(title)
+		ax.set_xlabel('obs error')
+		ax.set_ylabel('obs' if kb==0 else None)
+		ax.legend()
+		#ax.set_xlim([0.0025, 0.02])
+		ax.set_ylim([0, 0.4])
+
+		### multiband colors
+		#ax.grid(color=C_.COLOR_DICT[b])
+		[ax.spines[border].set_color(C_.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
+		[ax.spines[border].set_linewidth(2) for border in ['bottom', 'top', 'right', 'left']]
+
+	fig.tight_layout()
+	plt.show()
 
 ###################################################################################################################################################
 
@@ -47,10 +84,10 @@ def plot_obse_samplers(lcdataset, set_name, obse_sampler_bdict,
 				c = colors[p_idx]
 				ax.plot(ls_x_pdf, pdf, c=c, alpha=alpha, lw=1, label='$P(\sigma_x|x)$ beta fit' if p_idx==0 else None)
 				
-				txt = f'p[{obse_sampler.percentiles[p_idx]*1:.2f}-{obse_sampler.percentiles[p_idx+1]*1:.2f}]'
-				txt_x = ls_x_pdf[-1] if txt_i%2==0 else ls_x_pdf[0]
+				#txt = f'p[{obse_sampler.percentiles[p_idx]*1:.2f}-{obse_sampler.percentiles[p_idx+1]*1:.2f}]'
+				#txt_x = ls_x_pdf[-1] if txt_i%2==0 else ls_x_pdf[0]
 				#ax.text(txt_x, pdf[-1], txt, fontsize=8)
-				txt_i += 1
+				#txt_i += 1
 				
 			ax.plot(obse, obs, 'k.', markersize=2, alpha=0.2)
 		ax.plot(np.nan, np.nan, 'k.', alpha=1, label='original samples')
@@ -109,6 +146,8 @@ def plot_length_samplers(length_sampler_bdict, lcdataset, set_name:str,
 
 	fig.tight_layout()
 	plt.show()
+
+###################################################################################################################################################
 
 def plot_sigma_distribution(lcdataset, set_name:str,
 	figsize:tuple=(15,10),
@@ -169,3 +208,9 @@ def plot_class_distribution(
 	fig, ax = plot_hist_labels(to_plot, self.classes_names, title=title, figsize=figsize, uses_log_scale=uses_log_scale)
 	fig.tight_layout()
 	plt.show()
+
+def plot_mcmc_trace(mcmc_trace_bdict, b):
+	mcmc_trace = mcmc_trace_bdict[b]
+	az.plot_trace(mcmc_trace)
+	#pm.traceplot(mcmc_trace)
+	#pm.autocorrplot(mcmc_trace)

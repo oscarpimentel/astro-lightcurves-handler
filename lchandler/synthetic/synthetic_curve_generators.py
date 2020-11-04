@@ -8,34 +8,29 @@ from scipy.optimize import curve_fit
 from . import exceptions as ex
 from ..lc_classes import diff_vector
 import pymc3 as pm
-import logging
 
 ###################################################################################################################################################
 
 def sgm(x:float):
 	return 1/(1 + np.exp(-x))
 
-def syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall,
-	*args,
-	**kwargs):
+def syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall, offset):
 	assert np.all(~np.isnan(t))
 	assert np.all(~np.isnan(A))
 	nf = np.clip(f, 0, 1)
 	early = 1.0*(A*(1 - (nf*(t-t0)/gamma))   /   (1 + np.exp(-(t-t0)/trise)))   *   (1 - sgm((t-(gamma+t0))/3))
 	late = 1.0*(A*(1-nf)*np.exp(-(t-(gamma+t0))/tfall)   /   (1 + np.exp(-(t-t0)/trise)))   *   sgm((t-(gamma+t0))/3)
-	flux = early + late
+	flux = early+late+offset
 	return flux
 
-def syn_sne_fpymc3(t, A, t0, gamma, f, trise, tfall,
-	*args,
-	**kwargs):
+def syn_sne_fpymc3(t, A, t0, gamma, f, trise, tfall, offset):
 	early = 1.0*(A*(1 - (f*(t-t0)/gamma))   /   (1 + np.exp(-(t-t0)/trise)))   *   (1 - sgm((t-(gamma+t0))/3))
 	late = 1.0*(A*(1-f)*np.exp(-(t-(gamma+t0))/tfall)   /   (1 + np.exp(-(t-t0)/trise)))   *   sgm((t-(gamma+t0))/3)
-	flux = early + late
+	flux = early+late+offset
 	return flux
 
 def inverse_syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall):
-	return -syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall)
+	return -syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall, 0)
 
 def get_random_mean(a, b, r):
 	assert a<=b
@@ -48,7 +43,7 @@ def get_tmax(pm_args, pm_features, lcobjb):
 		fmin_args = tuple([pm_args[pmf] for pmf in pm_features])
 		tmax = fmin(inverse_syn_sne_fnumpy, t0, fmin_args, disp=False)[0]
 		ti = np.clip(tmax - (pm_args['trise']*5+pm_args['gamma']/10.), None, lcobjb.days[0])
-		tf = np.clip(tmax + (pm_args['tfall']*5+pm_args['gamma']/2.), lcobjb.days[-1], None)
+		tf = np.clip(tmax + (pm_args['tfall']*2.5+pm_args['gamma']/2.), lcobjb.days[-1], None)
 		assert tmax>=ti
 		assert tf>=tmax
 		pm_times = {
@@ -65,7 +60,8 @@ def extract_arrays(lcobjb):
 
 class SynSNeGeneratorCF():
 	def __init__(self, lcobj, band_names, obse_sampler_bdict, length_sampler_bdict,
-		pow_obs_error:bool=True,
+		new_bounds=True,
+		pow_obs_error:bool=False,
 		replace_nan_inf:bool=True,
 		max_obs_error:float=1e10,
 		uses_random_guess:bool=False,
@@ -82,6 +78,7 @@ class SynSNeGeneratorCF():
 		self.obse_sampler_bdict = obse_sampler_bdict
 		self.length_sampler_bdict = length_sampler_bdict
 		
+		self.new_bounds = new_bounds
 		self.pow_obs_error = pow_obs_error
 		self.replace_nan_inf = replace_nan_inf,
 		self.max_obs_error = max_obs_error,
@@ -96,7 +93,7 @@ class SynSNeGeneratorCF():
 		self.reset()
 
 	def reset(self):
-		pass
+		self.min_obs_bdict = {b:self.obse_sampler_bdict[b].min_obs for b in self.band_names}
 
 	def get_pm_bounds(self, lcobjb):
 		days, obs, obs_error = extract_arrays(lcobjb)
@@ -113,23 +110,25 @@ class SynSNeGeneratorCF():
 		day_max_flux = days[np.argmax(obs)]
 		first_day = days.min()
 		last_day = days.max()
-		t0_bound_value = 50
 
-		pm_bounds = {
-			#'A':(min_flux, max_flux),
-			'A':(max_flux / 3., max_flux * 3.),
-			#'A':(max_flux / 2., max_flux * 2.),
-			#'A':(mean_flux / 3., max_flux * 3.),
-			#'A':(mean_flux, max_flux*1.5),
-			't0':(-t0_bound_value, +t0_bound_value),
-			#'gamma':(1., 100.),
-			'gamma':(1., 25.),
-			'f':(0., 1.),
-			#'trise':(1., 100.),
-			'trise':(1., 30.),
-			#'tfall':(1., 100.),
-			'tfall':(1., 70.),
-		}
+		if not self.new_bounds:
+			pm_bounds = {
+				'A':(max_flux / 3., max_flux * 3.),
+				't0':(-80, +80),
+				'gamma':(1., 100.),
+				'f':(0., 1.),
+				'trise':(1., 100.),
+				'tfall':(1., 100.),
+			}
+		else:
+			pm_bounds = {
+				'A':(max_flux / 5., max_flux * 5.),
+				't0':(day_max_flux-50, day_max_flux+50),
+				'gamma':(1., 40.),
+				'f':(0., 1.),
+				'trise':(1., 5.),
+				'tfall':(1., 70.),
+			}
 		return pm_bounds
 
 	def get_p0(self, lcobjb, pm_bounds):
@@ -188,9 +187,9 @@ class SynSNeGeneratorCF():
 		lcobjb.apply_downsampling(self.cpds_p) # curve points downsampling
 
 		days, obs, obs_error = extract_arrays(lcobjb)
+		obs_error = obs_error**2 if self.pow_obs_error else obs_error
 		pm_bounds = self.get_pm_bounds(lcobjb)
 		p0 = self.get_p0(lcobjb, pm_bounds)
-		obs_error = obs_error**2 if self.pow_obs_error else obs_error
 
 		### checks
 		if len(days)<C_.MIN_POINTS_LIGHTCURVE_TO_PMFIT: # min points to even try a curve fit
@@ -221,7 +220,8 @@ class SynSNeGeneratorCF():
 
 		### fitting
 		try:
-			popt, pcov = curve_fit(SNE_fun_numpy, days, obs, p0=[p0[pmf] for pmf in self.pm_features], **fit_kwargs)
+			p0_ = [p0[pmf] for pmf in self.pm_features]
+			popt, pcov = curve_fit(lambda t, A, t0, gamma, f, trise, tfall:syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall, self.min_obs_bdict[b]), days, obs, p0=p0_, **fit_kwargs)
 		
 		except ValueError:
 			raise ex.CurveFitError()
@@ -249,15 +249,15 @@ class SynSNeGeneratorCF():
 		):
 		curve_lengths = self.length_sampler_bdict[b].sample(n)
 		new_lcobjbs = []
-		for k in range(n):
+		for kn in range(n):
 			try:
 				pm_args, pm_guess, pcov, lcobjb = self.get_fitting_data_b(b)
 				pm_times = get_tmax(pm_args, self.pm_features, lcobjb)
-				new_lcobjb = self.__sample_curve__(pm_times, pm_args, curve_lengths[k], lcobjb, b, uses_pm_obs)
+				new_lcobjb = self.__sample_curve__(pm_times, pm_args, curve_lengths[kn], lcobjb, b, uses_pm_obs)
 			except ex.TooShortCurveError:
-				new_lcobjb = self.lcobj.get_b(b).copy()
+				new_lcobjb = self.lcobj.get_b(b).copy() # just use the original
 			except ex.SyntheticCurveTimeoutError:
-				new_lcobjb = self.lcobj.get_b(b).copy()
+				new_lcobjb = self.lcobj.get_b(b).copy() # just use the original
 
 			new_lcobjbs.append(new_lcobjb)
 
@@ -265,9 +265,10 @@ class SynSNeGeneratorCF():
 
 	def __sample_curve__(self, pm_times, pm_args, size, lcobjb, b,
 		uses_pm_obs:bool=False,
+		timeout_counter=10000,
+		max_obs_threshold_scale=10.,
+		pm_obs_n=100,
 		):
-		timeout_counter = 1000
-		max_obs_threshold_scale = 2
 		new_lcobjb = lcobjb.copy()
 		i = 0
 		while True:
@@ -277,7 +278,7 @@ class SynSNeGeneratorCF():
 
 			### generate times to evaluate
 			if uses_pm_obs:
-				new_days = np.linspace(pm_times['ti'], pm_times['tf'], 100)
+				new_days = np.linspace(pm_times['ti'], pm_times['tf'], pm_obs_n)
 			else:
 				new_days = np.random.uniform(pm_times['ti'], pm_times['tf'], size=size)
 				new_days = np.sort(new_days) # sort
@@ -288,7 +289,7 @@ class SynSNeGeneratorCF():
 					continue
 
 			### generate parametric observations
-			pm_obs = syn_sne_fnumpy(new_days, **pm_args)
+			pm_obs = syn_sne_fnumpy(new_days, *[pm_args[pmf] for pmf in self.pm_features], self.min_obs_bdict[b])
 			if pm_obs.min()<0: # can't have negative observations
 				continue
 
@@ -300,7 +301,7 @@ class SynSNeGeneratorCF():
 				new_obse = self.obse_sampler_bdict[b].conditional_sample(pm_obs)
 				new_obs = np.clip(np.random.normal(pm_obs, new_obse*self.std_scale), 0, None)
 			
-			if new_obs.max()>=lcobjb.obs.max()*max_obs_threshold_scale: # can't be too high
+			if new_obs.max()>lcobjb.obs.max()*max_obs_threshold_scale: # flux can't be too high
 				continue
 
 			new_lcobjb.set_values(new_days, new_obs, new_obse)
@@ -309,73 +310,107 @@ class SynSNeGeneratorCF():
 ###################################################################################################################################################
 
 class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
-	def __init__(self, lcobj, band_names, obse_sampler_bdict, length_sampler_bdict):
-		super().__init__(lcobj, band_names, obse_sampler_bdict, length_sampler_bdict)
+	def __init__(self, lcobj, band_names, obse_sampler_bdict, length_sampler_bdict,
+		new_bounds=True,
+		pow_obs_error:bool=False,
+		replace_nan_inf:bool=True,
+		max_obs_error:float=1e10,
+		uses_random_guess:bool=False,
 
-	def reset(self):
-		return
+		hours_noise_amp:float=5,
+		cpds_p:float=0.015,
+		std_scale:float=0.5,
+		min_cadence_days:float=3.,
+		min_synthetic_len_b:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
+		):
+		super().__init__(lcobj, band_names, obse_sampler_bdict, length_sampler_bdict,
+			new_bounds,
+			pow_obs_error,
+			replace_nan_inf,
+			max_obs_error,
+			uses_random_guess,
 
-	def get_mcmc_traces(self, b, n):
+			hours_noise_amp,
+			cpds_p,
+			std_scale,
+			min_cadence_days,
+			min_synthetic_len_b,
+			)
+		self.mcmc_trace_bdict = {}
+
+	def get_mcmc_traces(self, b, n,
+		cores=2,
+		n_tune=2000,
+		n_samples=5000,
+		):
 		lcobjb = self.lcobj.get_b(b).copy() # copy
 		days, obs, obs_error = extract_arrays(lcobjb)
+		obs_error = obs_error**2 if self.pow_obs_error else obs_error
 
 		### checks
+		assert n%cores==0
 		if len(days)<C_.MIN_POINTS_LIGHTCURVE_TO_PMFIT: # min points to even try a curve fit
 			raise ex.TooShortCurveError()
-
-		### utils
-		min_flux = np.min(obs)
-		max_flux = np.max(obs)
-		mean_flux = np.mean(obs)
-		first_flux = obs[0]
-		day_max_flux = days[np.argmax(obs)]
-		first_day = days.min()
-		last_day = days.max()
-		t0_bound_value = 50
 		
+		### pymc3
+		trace_kwargs = {
+			'tune':n_tune, # burn-in steps
+			'cores':cores,
+			'progressbar':False,
+			#'target_accept':.95,
+			'target_accept':1.,
+		}
+		pm_bounds = self.get_pm_bounds(lcobjb)
+		import logging; logger = logging.getLogger('pymc3'); logger.setLevel(logging.ERROR) # remove logger
 		basic_model = pm.Model()
 		with basic_model:
-			A = pm.Uniform('A', 0, 5*max_flux)#,testval = A_est)
-			t0 = pm.Uniform('t0', day_max_flux - 40, day_max_flux+60)# ,testval = t0_est)
-			gamma = pm.Normal('gamma', 35, 10)#, testval = gamma_est)
-			f = pm.Uniform('f', 0, 1)
-			trise = pm.Uniform('trise', 1, 30)#, testval = taur_est)
-			tfall = pm.Uniform('tfall',1, 70)#, testval = tauf_est)
+			try:
+				A = pm.Uniform('A', *pm_bounds['A'])
+				t0 = pm.Uniform('t0', *pm_bounds['t0'])
+				#gamma = pm.Normal('gamma', 35, 10)
+				#gamma = pm.Uniform('gamma', 1., 50.)
+				gamma = pm.Gamma('gamma', alpha=pm_bounds['gamma'][0]+(pm_bounds['gamma'][-1]-pm_bounds['gamma'][0])/2., beta=1.)
+				f = pm.Beta('f', alpha=2.5, beta=1)
+				trise = pm.Uniform('trise', *pm_bounds['trise'])
+				tfall = pm.Uniform('tfall', *pm_bounds['tfall'])
+				offset = self.min_obs_bdict[b]
 
-			pm_obs = syn_sne_fpymc3(days, A, t0, gamma, f, trise, tfall)
-			pm_obs = pm.Normal('pm_obs', mu=pm_obs, sigma=obs_error, observed=obs)
-			#prior_checks = pm.sample_prior_predictive(samples=50, random_seed=0)
+				pm_obs = syn_sne_fpymc3(days, A, t0, gamma, f, trise, tfall, offset)
+				pm_obs = pm.Normal('pm_obs', mu=pm_obs, sigma=obs_error, observed=obs)
 
-		trace_kwargs = {
-			'tune':1000, # burn-in steps
-			'discard_tuned_samples':True,
-			'draws':n, # posterior draws per chain
-			'cores':2,
-			'progressbar':0,
-		}
-		#logger = logging.getLogger('pymc3'); logger.setLevel(logging.ERROR)
-		with basic_model:
-			mcmc_trace = pm.sample(step=pm.Metropolis(), **trace_kwargs)
-			#ppc = pm.sample_posterior_predictive(trace, var_names=trace.varnames)
+				# trace
+				#step = pm.Metropolis()
+				#step = pm.NUTS()
+				mcmc_trace = pm.sample(n_samples, **trace_kwargs)
+			except:
+				raise ex.MCMCError()
 
-		return mcmc_trace, lcobjb
+		return mcmc_trace, lcobjb, n_samples
 
 	def sample_curve_b(self, b, n,
 		uses_pm_obs:bool=False,
 		):
-		mcmc_trace, lcobjb = self.get_mcmc_traces(b, n)
-		self.mcmc_trace = mcmc_trace # debug
+		try:
+			mcmc_trace, lcobjb, n_samples = self.get_mcmc_traces(b, n)
+			self.mcmc_trace_bdict[b] = mcmc_trace
+		except ex.TooShortCurveError:
+			return [self.lcobj.get_b(b).copy() for kn in range(n)]
+		except ex.MCMCError:
+			return [self.lcobj.get_b(b).copy() for kn in range(n)]
+
 		curve_lengths = self.length_sampler_bdict[b].sample(n)
 		new_lcobjbs = []
-		for k in range(n):
+		#rindexs = np.random.permutation(np.arange(0, n_samples))
+		for kn in range(n):
 			try:
-				pm_args = {pmf:mcmc_trace[pmf][-k] for pmf in self.pm_features}
+				#pm_args = {pmf:self.mcmc_trace_bdict[b][pmf][rindexs[kn]] for pmf in self.pm_features}
+				pm_args = {pmf:self.mcmc_trace_bdict[b][pmf][-kn] for pmf in self.pm_features}
 				pm_times = get_tmax(pm_args, self.pm_features, lcobjb)
-				new_lcobjb = self.__sample_curve__(pm_times, pm_args, curve_lengths[k], lcobjb, b, uses_pm_obs)
+				new_lcobjb = self.__sample_curve__(pm_times, pm_args, curve_lengths[kn], lcobjb, b, uses_pm_obs)
 			except ex.TooShortCurveError:
-				new_lcobjb = self.lcobj.get_b(b).copy()
+				new_lcobjb = self.lcobj.get_b(b).copy() # just use the original
 			except ex.SyntheticCurveTimeoutError:
-				new_lcobjb = self.lcobj.get_b(b).copy()
+				new_lcobjb = self.lcobj.get_b(b).copy() # just use the original
 
 			new_lcobjbs.append(new_lcobjb)
 

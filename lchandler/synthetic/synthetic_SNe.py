@@ -1,7 +1,13 @@
+from __future__ import print_function
+from __future__ import division
+from . import C_
+
 import numpy as np
 from .synthetic_utils import *
 from .synthetic_SNe_fun import SNE_fun_numpy
 import copy
+
+###################################################################################################################################################
 
 def generate_FSNe(SNe_type:str, t:np.ndarray, dropout:float, sigma_error_arguments:dict,
 	SNe_kwargs=None):

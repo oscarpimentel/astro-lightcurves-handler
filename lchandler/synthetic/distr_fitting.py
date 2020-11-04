@@ -5,20 +5,21 @@ from . import C_
 import numpy as np
 import scipy.stats as stats
 from sklearn import preprocessing as prep
-from flamingchoripan.datascience.statistics import dropout_extreme_percentiles, get_percentile_ranks
+from flamingchoripan.datascience.statistics import dropout_extreme_percentiles, get_linspace_ranks
 
 ###################################################################################################################################################
 
 class ObsErrorConditionalSampler():
 	def __init__(self, lcdataset:dict, set_name:str, b:str,
-		n_rank_ranges:int=100,
+		samples_per_range:int=50,
 		):
 		self.lcdataset = lcdataset
 		self.lcset = lcdataset[set_name]
 		self.b = b
-		self.n_rank_ranges = n_rank_ranges
+		self.samples_per_range = samples_per_range
 		self.raw_obse = np.concatenate([lcobj.get_b(b).obse for lcobj in self.lcset.get_lcobjs()])
 		self.raw_obs = np.concatenate([lcobj.get_b(b).obs for lcobj in self.lcset.get_lcobjs()])
+		self.min_obs = self.raw_obs.min()
 		self.reset()
 		
 	def get_m_n(self):
@@ -53,8 +54,8 @@ class ObsErrorConditionalSampler():
 		self.obse = self.raw_obse[valid_indexs]
 		self.obs = self.raw_obs[valid_indexs]
 
-		### generate obs percentiles
-		self.percentiles, self.rank_ranges, self.obs_indexs_per_range, self.ranks = get_percentile_ranks(self.obs, self.n_rank_ranges)
+		### generate obs grid
+		self.rank_ranges, self.obs_indexs_per_range, self.ranks = get_linspace_ranks(self.obs, self.samples_per_range)
 		self.distrs = [self.get_fitted_distr(obs_indexs, k) for k,obs_indexs in enumerate(self.obs_indexs_per_range)]
 		
 	def get_fitted_distr(self, obs_indexs, k,

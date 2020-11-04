@@ -1,5 +1,11 @@
+from __future__ import print_function
+from __future__ import division
+from . import C_
+
 import numpy as np
 from scipy.stats import bernoulli
+
+###################################################################################################################################################
 
 def subsampling(t:np.ndarray, x:np.ndarray, dropout:float):
 	assert dropout>=0 and dropout<=1

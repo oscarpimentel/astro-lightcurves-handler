@@ -101,19 +101,10 @@ def plot_lightcurve(ax, lcobj, b,
 		ax.fill_between(new_days, obs-obse*std_factor, obs+obse*std_factor, facecolor=color, alpha=alpha)
 	elif mode=='bar':
 		ax.errorbar(new_days, obs, yerr=obse*std_factor, color=color, capsize=capsize, elinewidth=1, linewidth=0)
-	elif mode=='gauss':
-		assert 0
-		'''
-		for k,_ in enumerate(new_days):
-			new_x = new_days[k]+np.linspace(-obs_error[k]*std_factor, obs_error[k]*std_factor, 100)
-			new_y = new_x*0+obs[k]
-			ax.plot(new_x, new_y, '-')
-		ax.errorbar(new_days, obs, yerr=obs_error*std_factor, color=color, capsize=capsize, elinewidth=1, linewidth=0)
-		'''
 	else:
 		raise Exception(f'not supported mode: {mode}')
 	
-	ax.plot(new_days, obs, '-', color=color, alpha=alpha)
+	ax.plot(new_days, obs, '--', color=color, alpha=alpha)
 	if is_synthetic and not label is None:
 		label = label+' (synth)'
 	ax.plot(new_days, obs, 'o', color=color, label=label, markeredgecolor='k' if is_synthetic else None)

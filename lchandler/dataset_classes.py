@@ -5,8 +5,9 @@ from . import C_
 import numpy as np
 import random
 import copy
-from flamingchoripan.datascience.statistics import get_sigma_clipping_indexing
+from flamingchoripan.datascience.statistics import get_sigma_clipping_indexing, get_populations_cdict
 from flamingchoripan.prints import HiddenPrints, ShowPrints
+from flamingchoripan.level_bars import LevelBar
 
 ###################################################################################################################################################
 
@@ -205,22 +206,22 @@ class LCSet():
 		return [self.class_names[y] for y in self.get_lcobj_labels()]
 
 	def get_populations_cdict(self):
-		lcobj_classes = self.get_lcobj_classes()
-		uniques, counts = np.unique(lcobj_classes, return_counts=True)
-		return {c:counts[list(uniques).index(c)] for c in self.class_names}
+		return get_populations_cdict(self.get_lcobj_classes(), self.class_names)
 
 	def __repr__(self):
 		obs_len = sum([len(lcobj) for lcobj in self.get_lcobjs()])
 		obs_len_dict = {b:sum([len(lcobj.get_b(b)) for lcobj in self.get_lcobjs()]) for b in self.band_names}
 		obs_len_txt = ' - '.join([f'{b}: {obs_len_dict[b]:,}' for b in self.band_names])
-		max_duration = max([lcobj.get_days_serial_duration() for lcobj in self.get_lcobjs()])
 
-		txt = f'samples: {len(self):,} - obs samples: {obs_len:,} ({obs_len_txt})\n'
-		txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}[days]\n'
-		populations_cdict = self.get_populations_cdict()
-		total_population = sum([populations_cdict[k] for k in populations_cdict.keys()])
-		txt += f' - population: '+' - '.join([f'{k}: {populations_cdict[k]:,}({populations_cdict[k]/total_population*100:.2f}%)' for k in populations_cdict.keys()])
-		return txt
+		if len(self)>0:
+			txt = f'samples: {len(self):,} - obs samples: {obs_len:,} ({obs_len_txt})\n'
+			max_duration = max([lcobj.get_days_serial_duration() for lcobj in self.get_lcobjs()])
+			txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}[days]\n'
+			populations_cdict = self.get_populations_cdict()
+			txt += LevelBar(populations_cdict, ' '*3).__repr__()
+		else:
+			txt = 'empty lcset\n'
+		return txt[:-1]
 
 	def __len__(self):
 		return len(self.get_lcobj_names())
