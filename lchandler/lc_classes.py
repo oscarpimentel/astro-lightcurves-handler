@@ -108,13 +108,14 @@ class SubLCO():
 			if hasattr(self, 'log_obs'):
 				self.set_log('obs')
 
-	def add_obs_noise_gaussian(self, std_scale:float,
+	def add_obs_noise_gaussian(self, std_scale:float, obs_min_lim:float,
 		recalculate:bool=True,
 		):
 		'''
 		This method overrides information!
 		'''
-		obs_values = np.clip(np.random.normal(self.obs, self.obse*std_scale), 0, None)
+		assert np.all(self.obs>=obs_min_lim)
+		obs_values = np.clip(np.random.normal(self.obs, self.obse*std_scale), obs_min_lim, None)
 		obs_values = obs_values-self.obs
 		self.add_obs_values(obs_values)
 

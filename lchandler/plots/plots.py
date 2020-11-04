@@ -27,7 +27,13 @@ def plot_obs_obse_scatter(lcdataset, set_name1, set_name2,
 		ax.plot(lcset1.get_lcset_values_b(b, 'obse'), lcset1.get_lcset_values_b(b, 'obs'), 'k.', markersize=markersize, alpha=alpha)
 		ax.plot(np.nan, np.nan, 'k.', alpha=1, label=f'original samples {set_name1}')
 
-		ax.plot(lcset2.get_lcset_values_b(b, 'obse'), lcset2.get_lcset_values_b(b, 'obs'), 'r.', markersize=markersize, alpha=alpha)
+		obse = lcset2.get_lcset_values_b(b, 'obse')
+		obs = lcset2.get_lcset_values_b(b, 'obs')
+		n = 2e3
+		idxs = np.random.permutation(np.arange(0, len(obse)))[:int(n)]
+		obse = obse[idxs]
+		obs = obs[idxs]
+		ax.plot(obse, obs, 'r.', markersize=markersize, alpha=alpha)
 		ax.plot(np.nan, np.nan, 'r.', alpha=1, label=f'original samples {set_name2}')
 
 		title = f'survey:{lcset1.survey} - set: {set_name1}/{set_name2} - band: {b}'
@@ -60,13 +66,12 @@ def plot_obse_samplers(lcdataset, set_name, obse_sampler_bdict,
 		ax = axs[kb]
 		obse_sampler = obse_sampler_bdict[b]
 		colors = cm.viridis(np.linspace(0, 1, len(obse_sampler.distrs)))
-		txt_i = 0
 		for p_idx in range(len(obse_sampler.distrs)):
 			d = obse_sampler.distrs[p_idx]
 			obse = obse_sampler.raw_obse[obse_sampler.obs_indexs_per_range[p_idx]] if original_space else d['scaler'].transform(-obse_sampler.raw_obse[obse_sampler.obs_indexs_per_range[p_idx]][:,None])[:,0]
 			obs = obse_sampler.raw_obs[obse_sampler.obs_indexs_per_range[p_idx]]
 			
-			if p_idx%5==0:
+			if p_idx%3==0:
 				self_x =  obse_sampler.obse if original_space else d['scaler'].transform(-obse_sampler.obse[:,None])[:,0]
 				ls_x_pdf = np.linspace(self_x.min(), self_x.max(), 100)
 				tx_pdf = d['scaler'].transform(-ls_x_pdf[:,None])[:,0] if original_space else ls_x_pdf
@@ -83,11 +88,6 @@ def plot_obse_samplers(lcdataset, set_name, obse_sampler_bdict,
 				alpha = 1
 				c = colors[p_idx]
 				ax.plot(ls_x_pdf, pdf, c=c, alpha=alpha, lw=1, label='$P(\sigma_x|x)$ beta fit' if p_idx==0 else None)
-				
-				#txt = f'p[{obse_sampler.percentiles[p_idx]*1:.2f}-{obse_sampler.percentiles[p_idx+1]*1:.2f}]'
-				#txt_x = ls_x_pdf[-1] if txt_i%2==0 else ls_x_pdf[0]
-				#ax.text(txt_x, pdf[-1], txt, fontsize=8)
-				#txt_i += 1
 				
 			ax.plot(obse, obs, 'k.', markersize=2, alpha=0.2)
 		ax.plot(np.nan, np.nan, 'k.', alpha=1, label='original samples')

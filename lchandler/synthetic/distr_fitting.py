@@ -11,7 +11,7 @@ from flamingchoripan.datascience.statistics import dropout_extreme_percentiles, 
 
 class ObsErrorConditionalSampler():
 	def __init__(self, lcdataset:dict, set_name:str, b:str,
-		samples_per_range:int=30,
+		samples_per_range:int=15,
 		):
 		self.lcdataset = lcdataset
 		self.lcset = lcdataset[set_name]

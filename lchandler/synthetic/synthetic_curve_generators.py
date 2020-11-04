@@ -16,23 +16,23 @@ def override(func): return func
 def sgm(x:float):
 	return 1/(1 + np.exp(-x))
 
-def syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall, offset):
+def syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall):
 	assert np.all(~np.isnan(t))
 	assert np.all(~np.isnan(A))
 	nf = np.clip(f, 0, 1)
 	early = 1.0*(A*(1 - (nf*(t-t0)/gamma))   /   (1 + np.exp(-(t-t0)/trise)))   *   (1 - sgm((t-(gamma+t0))/3))
 	late = 1.0*(A*(1-nf)*np.exp(-(t-(gamma+t0))/tfall)   /   (1 + np.exp(-(t-t0)/trise)))   *   sgm((t-(gamma+t0))/3)
-	flux = early+late+offset
+	flux = early+late
 	return flux
 
-def syn_sne_fpymc3(t, A, t0, gamma, f, trise, tfall, offset):
+def syn_sne_fpymc3(t, A, t0, gamma, f, trise, tfall):
 	early = 1.0*(A*(1 - (f*(t-t0)/gamma))   /   (1 + np.exp(-(t-t0)/trise)))   *   (1 - sgm((t-(gamma+t0))/3))
 	late = 1.0*(A*(1-f)*np.exp(-(t-(gamma+t0))/tfall)   /   (1 + np.exp(-(t-t0)/trise)))   *   sgm((t-(gamma+t0))/3)
-	flux = early+late+offset
+	flux = early+late
 	return flux
 
 def inverse_syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall):
-	return -syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall, 0)
+	return -syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall)
 
 def get_random_mean(a, b, r):
 	assert a<=b
@@ -40,12 +40,22 @@ def get_random_mean(a, b, r):
 	mid = a+(b-a)/2
 	return np.random.uniform(mid*(1-r), mid*(1+r))
 
-def get_tmax(pm_args, pm_features, lcobjb):
+def get_tmax(pm_args, pm_features, lcobjb, threshold):
 		t0 = pm_args['t0']
 		fmin_args = tuple([pm_args[pmf] for pmf in pm_features])
 		tmax = fmin(inverse_syn_sne_fnumpy, t0, fmin_args, disp=False)[0]
-		ti = np.clip(tmax - (pm_args['trise']*5+pm_args['gamma']/10.), None, lcobjb.days[0])
-		tf = np.clip(tmax + (pm_args['tfall']*2.5+pm_args['gamma']/2.), lcobjb.days[-1], None)
+
+		### ti
+		dti = 20
+		lin_times = np.linspace(tmax-dti, tmax, int(dti)*24)
+		indexs = np.where(syn_sne_fnumpy(lin_times, *fmin_args)>threshold)[0]
+		ti = np.clip(lin_times[indexs[0]], tmax-dti, tmax)
+		
+		### tf
+		dtf = 200
+		lin_times = np.linspace(tmax, tmax+dtf, int(dtf)*24)
+		indexs = np.where(syn_sne_fnumpy(lin_times, *fmin_args)>threshold)[0]
+		tf = np.clip(lin_times[indexs[-1]], lcobjb.days[-1], tmax+dtf)
 		assert tmax>=ti
 		assert tf>=tmax
 		pm_times = {
@@ -185,7 +195,7 @@ class SynSNeGeneratorCF():
 	def get_fitting_data_b(self, b):
 		lcobjb = self.lcobj.get_b(b).copy() # copy
 		lcobjb.add_day_noise_uniform(self.hours_noise_amp) # add day noise
-		lcobjb.add_obs_noise_gaussian(self.std_scale) # add obs noise
+		lcobjb.add_obs_noise_gaussian(self.std_scale, self.min_obs_bdict[b]) # add obs noise
 		lcobjb.apply_downsampling(self.cpds_p) # curve points downsampling
 
 		days, obs, obs_error = extract_arrays(lcobjb)
@@ -223,7 +233,8 @@ class SynSNeGeneratorCF():
 		### fitting
 		try:
 			p0_ = [p0[pmf] for pmf in self.pm_features]
-			popt, pcov = curve_fit(lambda t, A, t0, gamma, f, trise, tfall:syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall, self.min_obs_bdict[b]), days, obs, p0=p0_, **fit_kwargs)
+			popt, pcov = curve_fit(syn_sne_fnumpy, days, obs, p0=p0_, **fit_kwargs)
+			#popt, pcov = curve_fit(lambda t, A, t0, gamma, f, trise, tfall:syn_sne_fnumpy(t, A, t0, gamma, f, trise, tfall, self.min_obs_bdict[b]), days, obs, p0=p0_, **fit_kwargs)
 		
 		except ValueError:
 			raise ex.CurveFitError()
@@ -254,7 +265,7 @@ class SynSNeGeneratorCF():
 		for kn in range(n):
 			try:
 				pm_args, pm_guess, pcov, lcobjb = self.get_fitting_data_b(b)
-				pm_times = get_tmax(pm_args, self.pm_features, lcobjb)
+				pm_times = get_tmax(pm_args, self.pm_features, lcobjb, self.min_obs_bdict[b])
 				new_lcobjb = self.__sample_curve__(pm_times, pm_args, curve_lengths[kn], lcobjb, b, uses_pm_obs)
 			except ex.TooShortCurveError:
 				new_lcobjb = self.lcobj.get_b(b).copy() # just use the original
@@ -291,7 +302,7 @@ class SynSNeGeneratorCF():
 					continue
 
 			### generate parametric observations
-			pm_obs = syn_sne_fnumpy(new_days, *[pm_args[pmf] for pmf in self.pm_features], self.min_obs_bdict[b])
+			pm_obs = syn_sne_fnumpy(new_days, *[pm_args[pmf] for pmf in self.pm_features])
 			if pm_obs.min()<0: # can't have negative observations
 				continue
 
@@ -301,7 +312,7 @@ class SynSNeGeneratorCF():
 				new_obs = pm_obs
 			else:
 				new_obse = self.obse_sampler_bdict[b].conditional_sample(pm_obs)
-				new_obs = np.clip(np.random.normal(pm_obs, new_obse*self.std_scale), 0, None)
+				new_obs = np.clip(np.random.normal(pm_obs, new_obse*self.std_scale), self.min_obs_bdict[b], None)
 			
 			if new_obs.max()>lcobjb.obs.max()*max_obs_threshold_scale: # flux can't be too high
 				continue
@@ -375,9 +386,8 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 				f = pm.Beta('f', alpha=2.5, beta=1)
 				trise = pm.Uniform('trise', *pm_bounds['trise'])
 				tfall = pm.Uniform('tfall', *pm_bounds['tfall'])
-				offset = self.min_obs_bdict[b]
 
-				pm_obs = syn_sne_fpymc3(days, A, t0, gamma, f, trise, tfall, offset)
+				pm_obs = syn_sne_fpymc3(days, A, t0, gamma, f, trise, tfall)
 				pm_obs = pm.Normal('pm_obs', mu=pm_obs, sigma=obs_error, observed=obs)
 
 				# trace
@@ -408,7 +418,7 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 			try:
 				#pm_args = {pmf:self.mcmc_trace_bdict[b][pmf][rindexs[kn]] for pmf in self.pm_features}
 				pm_args = {pmf:self.mcmc_trace_bdict[b][pmf][-kn] for pmf in self.pm_features}
-				pm_times = get_tmax(pm_args, self.pm_features, lcobjb)
+				pm_times = get_tmax(pm_args, self.pm_features, lcobjb, self.min_obs_bdict[b])
 				new_lcobjb = self.__sample_curve__(pm_times, pm_args, curve_lengths[kn], lcobjb, b, uses_pm_obs)
 			except ex.TooShortCurveError:
 				new_lcobjb = self.lcobj.get_b(b).copy() # just use the original
