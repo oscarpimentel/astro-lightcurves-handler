@@ -121,9 +121,9 @@ class ObsErrorConditionalSampler():
 		
 	def get_fitted_distr(self, obs_indexs, k):
 		### clean by percentile
-		#p = np.exp(-k*2)*6
-		p = 5
-		obse_values,_ = dropout_extreme_percentiles(self.obse[obs_indexs], p, mode='both')
+		obse_values = self.obse[obs_indexs]
+		p = (1-np.exp(-k*0.5))*5
+		obse_values,_ = dropout_extreme_percentiles(obse_values, p, mode='both')
 		distr = getattr(stats, 'gamma')
 		params = distr.fit(obse_values, floc=0)
 		return {'distr':distr, 'params':params}
