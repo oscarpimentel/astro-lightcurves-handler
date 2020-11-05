@@ -216,7 +216,13 @@ class LCSet():
 		if len(self)>0:
 			txt = f'samples: {len(self):,} - obs samples: {obs_len:,} ({obs_len_txt})\n'
 			max_duration = max([lcobj.get_days_serial_duration() for lcobj in self.get_lcobjs()])
-			txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}[days]\n'
+			self.set_diff_parallel('days') # remove after?
+			median_cadence = {}
+			for b in self.band_names:
+				ddays = self.get_lcset_values_b(b, 'd_days')
+				median_cadence[b] = np.percentile(ddays[ddays>0], 50)
+			txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}[days] - median_cadence: {median_cadence}\n'
+
 			populations_cdict = self.get_populations_cdict()
 			txt += LevelBar(populations_cdict, ' '*3).__repr__()
 		else:

@@ -80,7 +80,7 @@ class SynSNeGeneratorCF():
 
 		hours_noise_amp:float=5,
 		cpds_p:float=0.015,
-		std_scale:float=0.5,
+		std_scale:float=1,
 		min_cadence_days:float=3.,
 		min_synthetic_len_b:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		):
@@ -293,17 +293,25 @@ class SynSNeGeneratorCF():
 			if uses_pm_obs:
 				new_days = np.linspace(pm_times['ti'], pm_times['tf'], pm_obs_n)
 			else:
-				new_days = np.random.uniform(pm_times['ti'], pm_times['tf'], size=size)
+				### generate days grid according to cadence
+				new_day = pm_times['ti']
+				new_days = []
+				while new_day<pm_times['tf']:
+					new_days.append(new_day)
+					new_day += self.min_cadence_days
+				new_days = np.array(new_days)
+
+				### generate actual observation times
+				idxs = np.random.permutation(np.arange(0, len(new_days)))
+				new_days = new_days[idxs][:size]
 				new_days = np.sort(new_days) # sort
-				valid_new_days = diff_vector(new_days)>=self.min_cadence_days
-				new_days = new_days[valid_new_days]
-				new_len_b = len(new_days)
-				if new_len_b<=self.min_synthetic_len_b: # need to be long enough
+
+				if len(new_days)<=self.min_synthetic_len_b: # need to be long enough
 					continue
 
 			### generate parametric observations
 			pm_obs = syn_sne_fnumpy(new_days, *[pm_args[pmf] for pmf in self.pm_features])
-			if pm_obs.min()<0: # can't have negative observations
+			if pm_obs.min()<self.min_obs_bdict[b]: # can't have observation above the threshold
 				continue
 
 			### resampling obs using obs error
@@ -311,7 +319,7 @@ class SynSNeGeneratorCF():
 				new_obse = pm_obs*0
 				new_obs = pm_obs
 			else:
-				new_obse = self.obse_sampler_bdict[b].conditional_sample(pm_obs)
+				new_obse, new_obs = self.obse_sampler_bdict[b].conditional_sample(pm_obs)
 				new_obs = np.clip(np.random.normal(pm_obs, new_obse*self.std_scale), self.min_obs_bdict[b], None)
 			
 			if new_obs.max()>lcobjb.obs.max()*max_obs_threshold_scale: # flux can't be too high
@@ -331,7 +339,7 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 		uses_random_guess:bool=False,
 
 		hours_noise_amp:float=5,
-		cpds_p:float=0.015,
+		cpds_p:float=0.015, # used only in curve_fit mode
 		std_scale:float=0.5,
 		min_cadence_days:float=3.,
 		min_synthetic_len_b:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
