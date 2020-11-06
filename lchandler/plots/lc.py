@@ -5,6 +5,7 @@ from . import C_
 import numpy as np
 import matplotlib.pyplot as plt
 import flamingchoripan.lists as lists
+from flamingchoripan.cuteplots.utils import save_fig
 
 ###################################################################################################################################################
 
@@ -18,63 +19,51 @@ def get_margin(x, x_per):
 
 ###################################################################################################################################################
 
-def plot_synthetic_samples(lcdataset, set_name:str,
-	key:'str'=None,
+def plot_synthetic_samples(lcdataset, set_name:str, method, lcobj_name, new_lcobjs, new_lcobjs_pm,
 	figsize:tuple=(12,5),
 	lw=1.5,
-	max_samples:int=2,
+	save_rootdir=None,
 	):
-	lcset = lcdataset.get(set_name)
-	synth_lcset = lcdataset.get(f'synth_{set_name}')
-	key = lists.get_random_item(synth_lcset.used_keys) if key is None else key
-	synth_keys = get_synth_keys(synth_lcset.data_keys(), key)
-	print(f'key: {key} - synth_keys: {synth_keys}')
+	lcset = lcdataset[set_name]
+	fig, axs = plt.subplots(1, 2, figsize=figsize)
+	band_names = lcset.band_names
+	lcobj = lcset[lcobj_name]
 
-	figsize = (14,6)
-	fig, ax = plt.subplots(1, 1, figsize=figsize)
-
-	y = lcdataset.get(set_name).data[key].y
-	for sk,skey in enumerate(synth_keys):
-		if sk>=max_samples:
-			break
-
-		synth_lcobj = synth_lcset.data[skey]
-		for kb,b in enumerate(synth_lcset.band_names):
-			synth_lcobjb = synth_lcobj.get_b(b)
-			if synth_lcobjb.pm_times is None:
-				continue
-
-			days_fit = np.linspace(synth_lcobjb.pm_times['ti'], synth_lcobjb.pm_times['tf'], 100)
-			if not synth_lcobjb.pm_guess is None:
-				### guess
-				func_args = synth_lcobjb.pm_guess
-				obs_fit = func(days_fit, **func_args)
-				label = f'{b} pm guess' if sk==0 else None
-				ax.plot(days_fit, obs_fit, '-', c=cc.get_colorlist('cc_black')[kb], label=label, alpha=0.75, lw=lw)
-				
-				### fit
-				func_args = synth_lcobjb.pm_args
-				obs_fit = func(days_fit, **func_args)
-				label = f'{b} pm fit' if sk==0 else None
-				ax.plot(days_fit, obs_fit, '-', c=C_.COLOR_DICT[b], label=label, lw=lw)
-
-				### tmax
-				tmax = synth_lcobjb.pm_times['tmax']
-				ax.axvline(tmax, ls='--', lw=lw, c=C_.COLOR_DICT[b], label=f'{b} tmax')
-
-			plot_lightcurve(ax, synth_lcobj, b, label=f'{b} observation' if sk==0 else None, is_synthetic=True)
-
-	for kb,b in enumerate(lcset.band_names):
-		plot_lightcurve(ax, lcset.data[key], b, label=f'{b} observation')
-		
-	ax.legend(loc='upper right')
+	###
+	ax = axs[0]
+	for b in band_names:
+	    plot_lightcurve(ax, lcobj, b, label=f'{b} observation')
+	    for k,new_lcobj_pm in enumerate(new_lcobjs_pm):
+	        label = f'{b} posterior pm-sample' if k==0 else None
+	        ax.plot(new_lcobj_pm.get_b(b).days, new_lcobj_pm.get_b(b).obs, alpha=0.2, lw=1, c=C_.COLOR_DICT[b]); ax.plot(np.nan, np.nan, lw=1, c=C_.COLOR_DICT[b], label=label)
 	ax.grid(alpha=0.5)
-	title = 'multiband light curve example & parametric model fitting\n'
-	title += f'survey: {synth_lcset.survey} - set: {set_name} - key: {key} - class: {synth_lcset.class_names[y]}'
+	title = f'multiband light curve & parametric model samples\n'
+	title += f'survey: {lcset.survey} - set: {set_name} - method: {method}\n'
+	title += f'obj name: {lcobj_name} - class: {lcset.class_names[lcobj.y]}'
 	ax.set_title(title)
+	ax.legend(loc='upper right')
+	ax.set_ylabel('obs [flux]')
 	ax.set_xlabel('days')
-	ax.set_ylabel('flux')
-	plt.show()
+
+	###
+	ax = axs[1]
+	for b in band_names:
+	    plot_lightcurve(ax, lcobj, b, label=f'{b} observation')
+	    for k,new_lcobj in enumerate([new_lcobjs[0]]):
+	        plot_lightcurve(ax, new_lcobj, b, label=f'{b} observation' if k==0 else None, is_synthetic=1)
+	        
+	ax.grid(alpha=0.5)
+	title = f'multiband light curve & synthetic curve example\n'
+	title += f'survey: {lcset.survey} - set: {set_name} - method: {method}\n'
+	title += f'obj name: {lcobj_name} - class: {lcset.class_names[lcobj.y]}'
+	ax.set_title(title)
+	ax.legend(loc='upper right')
+	#ax.set_ylabel('obs [flux]')
+	ax.set_xlabel('days')
+
+	fig.tight_layout()
+	save_filedir = None if save_rootdir is None else f'{save_rootdir}/{lcset.survey}/{method}/{lcobj_name}.png'
+	save_fig(fig, save_filedir)
 
 def plot_lightcurve(ax, lcobj, b,
 	max_day:float=np.infty,

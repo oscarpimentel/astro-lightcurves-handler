@@ -139,6 +139,7 @@ class ObsErrorConditionalSampler():
 		d = self.distrs[self.get_percentile_range(new_obs)]
 		new_obse = d['distr'].rvs(*d['params'], size=1)
 		new_obse, _ = self.rotor.inverse_transform(new_obse, new_obs)
+		new_obse = np.clip(new_obse, 1e-10, None)
 		return new_obse[0], new_obs[0]
 		
 	def conditional_sample(self, obs):

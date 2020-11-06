@@ -5,18 +5,22 @@ from . import C_
 import numpy as np
 from flamingchoripan.progress_bars import ProgressBar
 from .synthetic_curve_generators import SynSNeGeneratorCF, SynSNeGeneratorMCMC
+from ..plots.lc import plot_synthetic_samples
 
 ###################################################################################################################################################
+
+GEN_CDICT = {
+	'curve_fit':SynSNeGeneratorCF,
+	'mcmc':SynSNeGeneratorMCMC,
+}
 
 def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_sampler_bdict,
 	method='curve_fit',
 	synthetic_samples_per_curve:float=2,
 	add_original=True,
+	ignored_lcobj_names=[],
+	save_rootdir=None,
 	):
-	generator_class_dict = {
-		'curve_fit':SynSNeGeneratorCF,
-		'mcmc':SynSNeGeneratorMCMC,
-	}
 	lcset = lcdataset[set_name]
 	lcobj_names = lcset.get_lcobj_names()
 	band_names = lcset.band_names
@@ -31,9 +35,12 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 			if can_be_in_loop:
 				#bar(f'add_original: {add_original} - set_name: {set_name} - lcobj_name: {lcobj_name} - lcobj_name: {lcobj_name} - pm_args: {pm_args}')
 				bar(f'method: {method} - add_original: {add_original} - set_name: {set_name} - lcobj_name: {lcobj_name}')
+				if lcobj_name in ignored_lcobj_names:
+					continue
 				lcobj = lcset[lcobj_name]
-				sne_generator = generator_class_dict[method](lcobj, band_names, obse_sampler_bdict, length_sampler_bdict)
-				new_lcobjs = sne_generator.sample_curves(synthetic_samples_per_curve)
+				sne_generator = GEN_CDICT[method](lcobj, band_names, obse_sampler_bdict, length_sampler_bdict)
+				new_lcobjs, new_lcobjs_pm = sne_generator.sample_curves(synthetic_samples_per_curve)
+				plot_synthetic_samples(lcdataset, set_name, method, lcobj_name, new_lcobjs, new_lcobjs_pm, save_rootdir=save_rootdir)
 				for knl,new_lcobj in enumerate(new_lcobjs):
 					new_lcobj_name = f'{lcobj_name}.{knl+1}'
 					new_lcobj.reset_day_offset_serial()
