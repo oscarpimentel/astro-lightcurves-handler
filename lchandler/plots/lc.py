@@ -20,7 +20,8 @@ def get_margin(x, x_per):
 ###################################################################################################################################################
 
 def plot_synthetic_samples(lcdataset, set_name:str, method, lcobj_name, new_lcobjs, new_lcobjs_pm,
-	figsize:tuple=(12,5),
+	fit_errors_bdict=None,
+	figsize:tuple=(13,6),
 	lw=1.5,
 	save_rootdir=None,
 	):
@@ -28,6 +29,7 @@ def plot_synthetic_samples(lcdataset, set_name:str, method, lcobj_name, new_lcob
 	fig, axs = plt.subplots(1, 2, figsize=figsize)
 	band_names = lcset.band_names
 	lcobj = lcset[lcobj_name]
+	idx = 0
 
 	###
 	ax = axs[0]
@@ -38,8 +40,8 @@ def plot_synthetic_samples(lcdataset, set_name:str, method, lcobj_name, new_lcob
 	        ax.plot(new_lcobj_pm.get_b(b).days, new_lcobj_pm.get_b(b).obs, alpha=0.2, lw=1, c=C_.COLOR_DICT[b]); ax.plot(np.nan, np.nan, lw=1, c=C_.COLOR_DICT[b], label=label)
 	ax.grid(alpha=0.5)
 	title = f'multiband light curve & parametric model samples\n'
-	title += f'survey: {lcset.survey} - set: {set_name} - method: {method}\n'
-	title += f'obj name: {lcobj_name} - class: {lcset.class_names[lcobj.y]}'
+	title += f'method: {method} - '+' - '.join([f'{b}-error: {np.mean(fit_errors_bdict[b]):.2f}$\pm${np.std(fit_errors_bdict[b]):.1f}' for b in band_names])+'\n'
+	title += f'survey: {lcset.survey}/{set_name} - obj: {lcobj_name}- class: {lcset.class_names[lcobj.y]}'
 	ax.set_title(title)
 	ax.legend(loc='upper right')
 	ax.set_ylabel('obs [flux]')
@@ -49,13 +51,13 @@ def plot_synthetic_samples(lcdataset, set_name:str, method, lcobj_name, new_lcob
 	ax = axs[1]
 	for b in band_names:
 	    plot_lightcurve(ax, lcobj, b, label=f'{b} observation')
-	    for k,new_lcobj in enumerate([new_lcobjs[0]]):
+	    for k,new_lcobj in enumerate([new_lcobjs[idx]]):
 	        plot_lightcurve(ax, new_lcobj, b, label=f'{b} observation' if k==0 else None, is_synthetic=1)
 	        
 	ax.grid(alpha=0.5)
 	title = f'multiband light curve & synthetic curve example\n'
-	title += f'survey: {lcset.survey} - set: {set_name} - method: {method}\n'
-	title += f'obj name: {lcobj_name} - class: {lcset.class_names[lcobj.y]}'
+	title += f'method: {method} - '+' - '.join([f'{b}-error: {fit_errors_bdict[b][idx]:.2f}' for b in band_names])+'\n'
+	title += f'survey: {lcset.survey}/{set_name} - obj: {lcobj_name}- class: {lcset.class_names[lcobj.y]}'
 	ax.set_title(title)
 	ax.legend(loc='upper right')
 	#ax.set_ylabel('obs [flux]')

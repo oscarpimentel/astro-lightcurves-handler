@@ -54,7 +54,10 @@ class ObsErrorConditionalSampler():
 		self.raw_obse = np.concatenate([lcobj.get_b(b).obse for lcobj in self.lcset.get_lcobjs()])
 		self.raw_obs = np.concatenate([lcobj.get_b(b).obs for lcobj in self.lcset.get_lcobjs()])
 		self.min_obs = self.raw_obs.min()
+		self.min_obse = self.raw_obse.min()
+		self.max_obse = self.raw_obse.max()
 		assert self.min_obs>=0
+		assert self.min_obse>=0
 		self.reset()
 		
 	def get_m_n(self):
@@ -132,14 +135,13 @@ class ObsErrorConditionalSampler():
 		return np.where(np.clip(obs, None, self.obs.max())<=self.rank_ranges[:,1])[0][0]
 		
 	def conditional_sample_i(self, obs):
-		#new_obs = np.clip(obs, self.min_obs, None) # can't
 		new_obse = np.array([0])
 		new_obs = np.array([obs])
 		new_obse, _ = self.rotor.inverse_transform(new_obse, new_obs)
 		d = self.distrs[self.get_percentile_range(new_obs)]
 		new_obse = d['distr'].rvs(*d['params'], size=1)
 		new_obse, _ = self.rotor.inverse_transform(new_obse, new_obs)
-		new_obse = np.clip(new_obse, 1e-10, None)
+		new_obse = np.clip(new_obse, self.min_obse, self.max_obse)
 		return new_obse[0], new_obs[0]
 		
 	def conditional_sample(self, obs):
@@ -150,7 +152,7 @@ class ObsErrorConditionalSampler():
 
 class CurveLengthSampler():
 	def __init__(self, lcdataset:dict, set_name:str, b:str,
-		offset:float=0,
+		offset:int=0,
 		):
 		self.lcdataset = lcdataset
 		self.lcset = lcdataset[set_name]

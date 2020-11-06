@@ -28,6 +28,7 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 	synth_lcset = lcset.copy({}) # copy
 	lcdataset.set_lcset(f'synth_{set_name}', synth_lcset)
 
+	fit_errors_bdict_list = []
 	can_be_in_loop = True
 	bar = ProgressBar(len(lcset))
 	for lcobj_name in lcobj_names:
@@ -39,7 +40,8 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 					continue
 				lcobj = lcset[lcobj_name]
 				sne_generator = GEN_CDICT[method](lcobj, band_names, obse_sampler_bdict, length_sampler_bdict)
-				new_lcobjs, new_lcobjs_pm = sne_generator.sample_curves(synthetic_samples_per_curve)
+				new_lcobjs, new_lcobjs_pm, fit_errors_bdict = sne_generator.sample_curves(synthetic_samples_per_curve)
+				fit_errors_bdict_list.append(fit_errors_bdict)
 				plot_synthetic_samples(lcdataset, set_name, method, lcobj_name, new_lcobjs, new_lcobjs_pm, save_rootdir=save_rootdir)
 				for knl,new_lcobj in enumerate(new_lcobjs):
 					new_lcobj_name = f'{lcobj_name}.{knl+1}'
@@ -53,4 +55,4 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 			can_be_in_loop = False
 
 	bar.done()
-	return
+	return fit_errors_bdict_list
