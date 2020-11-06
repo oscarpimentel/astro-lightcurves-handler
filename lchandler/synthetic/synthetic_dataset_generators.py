@@ -25,6 +25,7 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 	lcset = lcdataset[set_name]
 	lcobj_names = lcset.get_lcobj_names()
 	band_names = lcset.band_names
+	class_names = lcset.class_names
 
 	synth_lcset = lcset.copy({}) # copy
 	lcdataset.set_lcset(f'synth_{set_name}', synth_lcset)
@@ -40,12 +41,16 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 				if lcobj_name in ignored_lcobj_names:
 					continue
 				lcobj = lcset[lcobj_name]
-				sne_generator = GEN_CDICT[method](lcobj, band_names, obse_sampler_bdict, length_sampler_bdict)
+				sne_generator = GEN_CDICT[method](lcobj, class_names, band_names, obse_sampler_bdict, length_sampler_bdict)
 				new_lcobjs, new_lcobjs_pm, fit_errors_bdict = sne_generator.sample_curves(synthetic_samples_per_curve)
 				fit_errors_bdict_list.append(fit_errors_bdict)
 				save_filedir = None if save_rootdir is None else f'{save_rootdir}/{lcset.survey}/{method}/{lcobj_name}.ferror'
 				save_pickle(save_filedir, fit_errors_bdict, verbose=0) # save
-				plot_synthetic_samples(lcdataset, set_name, method, lcobj_name, new_lcobjs, new_lcobjs_pm, save_rootdir=save_rootdir)
+				plot_kwargs = {
+					'fit_errors_bdict':fit_errors_bdict,
+					'save_rootdir':save_rootdir,
+				}
+				plot_synthetic_samples(lcdataset, set_name, method, lcobj_name, new_lcobjs, new_lcobjs_pm, **plot_kwargs)
 				for knl,new_lcobj in enumerate(new_lcobjs):
 					new_lcobj_name = f'{lcobj_name}.{knl+1}'
 					new_lcobj.reset_day_offset_serial()

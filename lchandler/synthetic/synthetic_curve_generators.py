@@ -164,7 +164,7 @@ class SynSNeGeneratorCF():
 		else:
 			pm_bounds = {
 				'A':(max_flux / 3, max_flux * 7),
-				't0':(day_max_flux-100, day_max_flux+10),
+				't0':(day_max_flux-50, day_max_flux+10),
 				'gamma':(1, 40),
 				'f':(0, 1),
 				'trise':(1, 15),
@@ -175,10 +175,10 @@ class SynSNeGeneratorCF():
 			pm_bounds_slsn = {
 				'A':(max_flux / 3, max_flux * 7),
 				't0':(day_max_flux-200, day_max_flux+10),
-				'gamma':(1, 120),
+				'gamma':(1, 100),
 				'f':(0, 1),
-				'trise':(10, 200),
-				'tfall':(100, 300),
+				'trise':(1, 200),
+				'tfall':(10, 300),
 				's':(1e-1, 1e0),
 				'g':(0, 1), # use with bernoulli
 			}
