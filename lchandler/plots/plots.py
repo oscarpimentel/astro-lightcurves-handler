@@ -136,8 +136,8 @@ def plot_length_samplers(length_sampler_bdict, lcdataset, set_name:str,
 		length_sampler = length_sampler_bdict[b]
 		#print(len_sampler.sample(10))
 		to_plot = {
-			'a':length_sampler.lengths,
-			'b':length_sampler.sample(1e4),
+			'original':length_sampler.lengths,
+			'sampler':length_sampler.sample(1e4),
 				  }
 		plot_kwargs = {
 			'fig':fig,

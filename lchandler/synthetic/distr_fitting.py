@@ -162,10 +162,10 @@ class CurveLengthSampler():
 
 	def reset(self):
 		self.lengths = np.array([len(lcobj.get_b(self.b)) for lcobj in self.lcset.get_lcobjs()])
-		uniques, count = np.unique(self.lengths, return_counts=1)
+		uniques, count = np.unique(self.lengths+self.offset, return_counts=True)
 		d = {u:count[ku] for ku,u in enumerate(uniques)}
 		x_pdf = np.arange(self.lengths.min(), self.lengths.max())
-		self.pdf = np.array([d.get(x,0) for x in x_pdf]) + self.offset
+		self.pdf = np.array([d.get(x,0) for x in x_pdf])
 		self.pdf = self.pdf/self.pdf.sum()
 		self.cdf = np.cumsum(self.pdf)
 

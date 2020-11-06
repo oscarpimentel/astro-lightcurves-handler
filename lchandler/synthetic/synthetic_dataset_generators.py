@@ -45,7 +45,12 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 				new_lcobjs, new_lcobjs_pm, fit_errors_bdict = sne_generator.sample_curves(synthetic_samples_per_curve)
 				fit_errors_bdict_list.append(fit_errors_bdict)
 				save_filedir = None if save_rootdir is None else f'{save_rootdir}/{lcset.survey}/{method}/{lcobj_name}.ferror'
-				save_pickle(save_filedir, fit_errors_bdict, verbose=0) # save
+				to_save = {
+					'lcobj_name':lcobj_name,
+					'band_names':band_names,
+					'error_bdict':fit_errors_bdict,
+					}
+				save_pickle(save_filedir, to_save, verbose=0) # save
 				plot_kwargs = {
 					'fit_errors_bdict':fit_errors_bdict,
 					'save_rootdir':save_rootdir,
