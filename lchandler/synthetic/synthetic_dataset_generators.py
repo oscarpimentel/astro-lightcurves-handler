@@ -48,6 +48,7 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 				to_save = {
 					'lcobj_name':lcobj_name,
 					'band_names':band_names,
+					'c':class_names[lcobj.y],
 					'error_bdict':fit_errors_bdict,
 					}
 				save_pickle(save_filedir, to_save, verbose=0) # save
