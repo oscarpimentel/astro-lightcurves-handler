@@ -210,7 +210,7 @@ class SynSNeGeneratorCF():
 		lcobjb.apply_downsampling(self.cpds_p) # curve points downsampling
 
 		days, obs, obs_error = extract_arrays(lcobjb)
-		obs_error = obs_error**2 if self.pow_obs_error else obs_error
+		obs_error = (obs_error*self.std_scale)**2 if self.pow_obs_error else obs_error*self.std_scale
 		pm_bounds = self.get_pm_bounds(lcobjb)
 		p0 = self.get_p0(lcobjb, pm_bounds)
 
@@ -383,7 +383,7 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 		):
 		lcobjb = self.lcobj.get_b(b).copy() # copy
 		days, obs, obs_error = extract_arrays(lcobjb)
-		obs_error = obs_error**2 if self.pow_obs_error else obs_error
+		obs_error = (obs_error*self.std_scale)**2 if self.pow_obs_error else obs_error*self.std_scale
 
 		### checks
 		assert n%cores==0
