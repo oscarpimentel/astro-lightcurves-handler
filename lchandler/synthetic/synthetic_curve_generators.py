@@ -499,7 +499,7 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 			idx = -kn
 			try:
 				pm_args = mcmc_pm_args[idx]
-				new_lcobjb_pm = mcmc_errors[idx]
+				fit_error = mcmc_errors[idx]
 				pm_times = self.get_tmax(pm_args, lcobjb, self.min_obs_bdict[b])
 				new_lcobjb = self.__sample_curve__(pm_times, pm_args, curve_lengths[kn], lcobjb, b)
 				new_lcobjb_pm = self.__sample_curve__(pm_times, pm_args, curve_lengths[kn], lcobjb, b, True)

@@ -4,6 +4,7 @@ from . import C_
 
 import numpy as np
 from flamingchoripan.progress_bars import ProgressBar
+from flamingchoripan.files import save_pickle
 from .synthetic_curve_generators import SynSNeGeneratorCF, SynSNeGeneratorMCMC
 from ..plots.lc import plot_synthetic_samples
 
@@ -42,6 +43,8 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 				sne_generator = GEN_CDICT[method](lcobj, band_names, obse_sampler_bdict, length_sampler_bdict)
 				new_lcobjs, new_lcobjs_pm, fit_errors_bdict = sne_generator.sample_curves(synthetic_samples_per_curve)
 				fit_errors_bdict_list.append(fit_errors_bdict)
+				save_filedir = None if save_rootdir is None else f'{save_rootdir}/{lcset.survey}/{method}/{lcobj_name}.ferror'
+				save_pickle(save_filedir, fit_errors_bdict, verbose=0) # save
 				plot_synthetic_samples(lcdataset, set_name, method, lcobj_name, new_lcobjs, new_lcobjs_pm, save_rootdir=save_rootdir)
 				for knl,new_lcobj in enumerate(new_lcobjs):
 					new_lcobj_name = f'{lcobj_name}.{knl+1}'
