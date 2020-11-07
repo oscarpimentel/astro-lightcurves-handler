@@ -169,26 +169,27 @@ class SynSNeGeneratorCF():
 		else:
 			pm_bounds = {
 				'A':(max_flux / 3, max_flux * 3),
-				't0':(day_max_flux-25, day_max_flux+10),
-				'gamma':(3, 100),
+				't0':(day_max_flux-30, day_max_flux+10),
+				#'gamma':(3, 100),
+				'gamma':(5, 100),
 				'f':(0, 1),
-				'trise':(1, 10),
+				'trise':(1, 20),
 				'tfall':(5, 100),
 				's':(1/3, 3),
 				'g':(0, 1), # use with bernoulli
 			}
 			pm_bounds_slsn = {
 				'A':(max_flux / 3, max_flux * 3),
-				't0':(day_max_flux-50, day_max_flux+20),
+				't0':(day_max_flux-100, day_max_flux+10),
 				'gamma':(3, 150),
 				'f':(0, 1),
 				'trise':(1, 100),
-				'tfall':(5, 200),
+				'tfall':(50, 300),
 				's':(1/3, 3),
 				'g':(0, 1), # use with bernoulli
 			}
 			ret = {c:pm_bounds for c in self.class_names}
-			ret.update({'SLSN':pm_bounds_slsn})
+			#ret.update({'SLSN':pm_bounds_slsn})
 		return ret
 		
 
@@ -252,11 +253,10 @@ class SynSNeGeneratorCF():
 	def get_fitting_data_b(self, b):
 		lcobjb = self.lcobj.get_b(b).copy() # copy
 		lcobjb.add_day_noise_uniform(self.hours_noise_amp) # add day noise
-		lcobjb.add_obs_noise_gaussian(self.std_scale, self.min_obs_bdict[b]) # add obs noise
+		lcobjb.add_obs_noise_gaussian(1, self.min_obs_bdict[b]) # add obs noise
 		lcobjb.apply_downsampling(self.cpds_p) # curve points downsampling
 
 		days, obs, obs_error = extract_arrays(lcobjb)
-		obs_error = (obs_error*self.std_scale)**2 if self.pow_obs_error else obs_error*self.std_scale
 		pm_bounds = self.get_pm_bounds(lcobjb)[self.c]
 		p0 = self.get_p0(lcobjb, pm_bounds)
 
@@ -435,7 +435,6 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 		):
 		lcobjb = self.lcobj.get_b(b).copy() # copy
 		days, obs, obs_error = extract_arrays(lcobjb)
-		obs_error = (obs_error*self.std_scale)**2 if self.pow_obs_error else obs_error*self.std_scale
 
 		### checks
 		assert n%cores==0
@@ -481,6 +480,8 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 			#try:
 			#	pass
 			except ValueError:
+				raise ex.MCMCError()
+			except AssertionError:
 				raise ex.MCMCError()
 
 		mcmc_pm_args = [{pmf:mcmc_trace[pmf][i] for pmf in self.pm_features} for i in range(0, n_samples)]
