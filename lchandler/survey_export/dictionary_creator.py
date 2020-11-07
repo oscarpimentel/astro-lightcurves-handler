@@ -173,7 +173,7 @@ class LightCurveDictionaryCreator():
 		SCPD_probs:list=[1.],
 		filename_extra_parameters:dict={},
 		saves_every:int=100,
-		npartitions:int=4,
+		npartitions:int=C_.N_DASK,
 		):
 		uses_saves_every = saves_every>0
 		class_dfkey = self.df_index_names['label']
@@ -270,8 +270,7 @@ class LightCurveDictionaryCreator():
 					lcobj.reset_day_offset_serial()
 
 					### get lengths
-					#lengths_cond = np.any([len(lcobj.get_b(b))>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in to_export_bands])
-					lengths_cond = np.any([len(lcobj.get_b(b))>=2 for b in to_export_bands])
+					lengths_cond = np.any([len(lcobj.get_b(b))>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in to_export_bands])
 
 					### get label
 					y, y_cond = self.get_label(self.labels_df, lcobj_name, easy_label_dict)

@@ -2,6 +2,9 @@ import numpy as np
 
 ###################################################################################################################################################
 
+### EXPORT
+N_DASK = 4
+
 ### SYNTHETIC
 NORMAL_STD_SCALE = 0.5
 EPS = 1e-12
@@ -66,9 +69,9 @@ XLABEL_DICT = {
 }
 
 ### LENGTHS
-MIN_POINTS_LIGHTCURVE_DEFINITION = 3
+MIN_POINTS_LIGHTCURVE_DEFINITION = 3 # 2, 3
 MIN_POINTS_LIGHTCURVE_DEFINITION_FATS = 4
-MIN_POINTS_LIGHTCURVE_TO_PMFIT = 5
+MIN_POINTS_LIGHTCURVE_TO_PMFIT = 3
 
 ### FILE TYPES
 EXT_RAW_LIGHTCURVE = 'rawlcd' # no split, as RAW ZTF/FSNes
