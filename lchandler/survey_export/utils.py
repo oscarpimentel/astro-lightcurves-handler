@@ -257,7 +257,7 @@ class LightCurveDictionaryCreator():
 				pass_cond = False
 				calculated_cache += 1
 				y = None
-				lengths = None
+				lengths_bdict = None
 				try:
 					obj_df = detections_dd.loc[[lcobj_name]].compute() # FAST
 					for kb,b in enumerate(to_export_bands):
@@ -270,7 +270,8 @@ class LightCurveDictionaryCreator():
 					lcobj.reset_day_offset_serial()
 
 					### get lengths
-					lengths_cond = np.any([len(lcobj.get_b(b))>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in to_export_bands])
+					#lengths_cond = np.any([len(lcobj.get_b(b))>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in to_export_bands])
+					lengths_cond = np.any([len(lcobj.get_b(b))>=2 for b in to_export_bands])
 
 					### get label
 					y, y_cond = self.get_label(self.labels_df, lcobj_name, easy_label_dict)

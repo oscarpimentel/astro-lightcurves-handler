@@ -75,7 +75,7 @@ def plot_obse_samplers(lcdataset, set_name, obse_sampler_bdict,
 
 			### add samples
 			if add_samples:
-				n = int(2e3)
+				n = int(1e3)
 				to_sample = obse_sampler.raw_obs
 				std = 1e-4
 				new_obs = [np.random.normal(to_sample[np.random.randint(0, len(to_sample))], std) for _ in range(n)] # kde
@@ -106,14 +106,14 @@ def plot_obse_samplers(lcdataset, set_name, obse_sampler_bdict,
 			title = f'survey:{lcset.survey} - set: {set_name} - band: {b}'
 			ax.set_xlabel('obs-error')
 			ax.set_ylabel('obs' if kb==0 else None)
-			ax.set_xlim([0.0, 0.02])
-			ax.set_ylim([0.0, 0.25])
+			#ax.set_xlim([0.0, 0.02])
+			#ax.set_ylim([0.0, 0.25])
 		else:
 			title = f'survey:{lcset.survey} - set: {set_name} - band: {b}'
 			ax.set_xlabel('rotated-flipped obs-error')
 			ax.set_ylabel('rotated obs' if kb==0 else None)
-			ax.set_xlim([0.0, 0.02])
-			ax.set_ylim([0.0, 0.25])
+			#ax.set_xlim([0.0, 0.02])
+			#ax.set_ylim([0.0, 0.25])
 
 		ax.set_title(title)
 		ax.legend(loc='lower right')

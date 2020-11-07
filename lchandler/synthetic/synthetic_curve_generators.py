@@ -17,7 +17,11 @@ def sgm(x, x0, s):
 	return 1/(1 + np.exp(-s*(x-x0)))
 
 def syn_sne_fun(t, A, t0, gamma, f, trise, tfall):
-	g = sgm(t, gamma+t0, 1/3.)
+	s = 1/3
+	#s = 1
+	#s = 10
+
+	g = sgm(t, gamma+t0, s)
 	early = 1.0*(A*(1 - (f*(t-t0)/gamma))   /   (1 + np.exp(-(t-t0)/trise)))
 	late = 1.0*(A*(1-f)*np.exp(-(t-(gamma+t0))/tfall)   /   (1 + np.exp(-(t-t0)/trise)))
 	flux = (1-g)*early + g*late
@@ -70,13 +74,14 @@ class SynSNeGeneratorCF():
 
 		hours_noise_amp:float=5,
 		cpds_p:float=0.015,
-		std_scale:float=1,
+		std_scale:float=C_.NORMAL_STD_SCALE,
 		min_cadence_days:float=3.,
 		min_synthetic_len_b:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		):
-		#self.pm_features = ['A', 't0', 'gamma', 'f', 'trise', 'tfall'; self.fun = syn_sne_fun; self.inv_fun = inverse_syn_sne_fun
+		#self.pm_features = ['A', 't0', 'gamma', 'f', 'trise', 'tfall']; self.fun = syn_sne_fun; self.inv_fun = inverse_syn_sne_fun
 		self.pm_features = ['A', 't0', 'gamma', 'f', 'trise', 'tfall', 's']; self.fun = syn_sne_sfun; self.inv_fun = inverse_syn_sne_sfun
 		#self.pm_features = ['A', 't0', 'gamma', 'f', 'trise', 'tfall', 'g']; self.fun = syn_sne_gfun; self.inv_fun = inverse_syn_sne_gfun
+		
 		self.lcobj = lcobj.copy()
 		self.class_names = class_names.copy()
 		self.c = self.class_names[lcobj.y]
@@ -156,30 +161,30 @@ class SynSNeGeneratorCF():
 				'trise':(1, 100),
 				'tfall':(1, 100),
 				#'s':(1/3.-0.01, 1/3.+0.01),
-				's':(1e-1, 1e1),
+				's':(1e-1, 2e1),
 				#'s':(1e-1, 1e3),
 				'g':(0, 1), # use with bernoulli
 			}
 			ret = {c:pm_bounds for c in self.class_names}
 		else:
 			pm_bounds = {
-				'A':(max_flux / 3, max_flux * 7),
-				't0':(day_max_flux-50, day_max_flux+10),
-				'gamma':(1, 40),
+				'A':(max_flux / 3, max_flux * 3),
+				't0':(day_max_flux-25, day_max_flux+10),
+				'gamma':(3, 100),
 				'f':(0, 1),
-				'trise':(1, 15),
-				'tfall':(10, 100),
-				's':(1e-1, 1e0),
+				'trise':(1, 10),
+				'tfall':(5, 100),
+				's':(1/3, 3),
 				'g':(0, 1), # use with bernoulli
 			}
 			pm_bounds_slsn = {
-				'A':(max_flux / 3, max_flux * 7),
-				't0':(day_max_flux-200, day_max_flux+10),
-				'gamma':(1, 100),
+				'A':(max_flux / 3, max_flux * 3),
+				't0':(day_max_flux-50, day_max_flux+20),
+				'gamma':(3, 150),
 				'f':(0, 1),
-				'trise':(1, 200),
-				'tfall':(10, 300),
-				's':(1e-1, 1e0),
+				'trise':(1, 100),
+				'tfall':(5, 200),
+				's':(1/3, 3),
 				'g':(0, 1), # use with bernoulli
 			}
 			ret = {c:pm_bounds for c in self.class_names}
@@ -214,7 +219,7 @@ class SynSNeGeneratorCF():
 		
 		### gamma
 		mask = obs >= max_flux / 3. #np.percentile(obs, 33)
-		gamma_guess = new_days[mask].max() - new_days[mask].min() if mask.sum() > 0 else 2.
+		gamma_guess = new_days[mask].max() - new_days[mask].min() if mask.sum() > 0 else pm_bounds['gamma'][0]
 
 		### f
 		f_guess = 0.5 if not self.uses_random_guess else get_random_mean(pm_bounds['f'][0], pm_bounds['f'][-1], frac_r)
@@ -404,7 +409,7 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 
 		hours_noise_amp:float=5,
 		cpds_p:float=0.015, # used only in curve_fit mode
-		std_scale:float=0.5,
+		std_scale:float=C_.NORMAL_STD_SCALE,
 		min_cadence_days:float=3.,
 		min_synthetic_len_b:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		):
@@ -425,8 +430,8 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 
 	def get_mcmc_traces(self, b, n,
 		cores=2,
-		n_tune=1000,
-		n_samples=2000,
+		n_tune=500, # 500, 1000
+		n_samples=1000, # 1000, 2000
 		):
 		lcobjb = self.lcobj.get_b(b).copy() # copy
 		days, obs, obs_error = extract_arrays(lcobjb)
@@ -453,18 +458,20 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 			#if 1:
 				A = pm.Uniform('A', *pm_bounds['A'])
 				t0 = pm.Uniform('t0', *pm_bounds['t0'])
-				#gamma = pm.Normal('gamma', 35, 10)
+				#gamma = pm.Normal('gamma', mu=35, sigma=10)
 				gamma = pm.Uniform('gamma', *pm_bounds['gamma'])
-				#gamma = pm.Gamma('gamma', alpha=pm_bounds['gamma'][0]+(pm_bounds['gamma'][-1]-pm_bounds['gamma'][0])/2., beta=1.)
-				f = pm.Uniform('f', 0., 1.)
+				#gamma = pm.Normal('gamma', mu=pm_bounds['gamma'][0]+(pm_bounds['gamma'][-1]-pm_bounds['gamma'][0])/2., sigma=10)
+				#gamma = pm.Gamma('gamma', alpha=pm_bounds['gamma'][0]+(pm_bounds['gamma'][-1]-pm_bounds['gamma'][0])/2., beta=1)
+				f = pm.Uniform('f', 0, 1)
 				#f = pm.Beta('f', alpha=2.5, beta=1)
 				trise = pm.Uniform('trise', *pm_bounds['trise'])
 				tfall = pm.Uniform('tfall', *pm_bounds['tfall'])
 				s = pm.Uniform('s', *pm_bounds['s'])
 				#g = pm.Bernoulli('g', 0.5)
 
-				pm_obs = self.fun(days, A, t0, gamma, f, trise, tfall, s)
-				pm_obs = pm.Normal('pm_obs', mu=pm_obs, sigma=obs_error, observed=obs)
+				pm_obs = pm.Normal('pm_obs', mu=self.fun(days, A, t0, gamma, f, trise, tfall, s), sigma=obs_error, observed=obs)
+				#pm_obs = pm.Normal('pm_obs', mu=self.fun(days, A, t0, gamma, f, trise, tfall), sigma=obs_error, observed=obs)
+				#pm_obs = pm.StudentT('pm_obs'. nu=5, mu=pm_obs, sigma=obs_error, observed=obs)
 
 				# trace
 				#step = pm.Metropolis()
@@ -484,6 +491,7 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 	def sample_curve_b(self, b, n):
 		try:
 			mcmc_pm_args, lcobjb, n_samples, mcmc_errors, mcmc_trace = self.get_mcmc_traces(b, n)
+			sorted_indexs = np.argsort(mcmc_errors)
 			self.mcmc_trace_bdict[b] = mcmc_trace # to debug and plot traces
 		except ex.TooShortCurveError:
 			return [self.lcobj.get_b(b).copy() for kn in range(n)], [self.lcobj.get_b(b).copy() for kn in range(n)], [0]*n
@@ -496,10 +504,12 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 		fit_errors = []
 		#rindexs = np.random.permutation(np.arange(0, n_samples))
 		for kn in range(n):
-			idx = -kn
+			idx = sorted_indexs[kn]
 			try:
 				pm_args = mcmc_pm_args[idx]
 				fit_error = mcmc_errors[idx]
+				#print(fit_error)
+				#print(pm_args['gamma'])
 				pm_times = self.get_tmax(pm_args, lcobjb, self.min_obs_bdict[b])
 				new_lcobjb = self.__sample_curve__(pm_times, pm_args, curve_lengths[kn], lcobjb, b)
 				new_lcobjb_pm = self.__sample_curve__(pm_times, pm_args, curve_lengths[kn], lcobjb, b, True)

@@ -37,7 +37,7 @@ def plot_synthetic_samples(lcdataset, set_name:str, method, lcobj_name, new_lcob
 	    plot_lightcurve(ax, lcobj, b, label=f'{b} observation')
 	    for k,new_lcobj_pm in enumerate(new_lcobjs_pm):
 	        label = f'{b} posterior pm-sample' if k==0 else None
-	        ax.plot(new_lcobj_pm.get_b(b).days, new_lcobj_pm.get_b(b).obs, alpha=0.2, lw=1, c=C_.COLOR_DICT[b]); ax.plot(np.nan, np.nan, lw=1, c=C_.COLOR_DICT[b], label=label)
+	        ax.plot(new_lcobj_pm.get_b(b).days, new_lcobj_pm.get_b(b).obs, alpha=0.15, lw=1, c=C_.COLOR_DICT[b]); ax.plot(np.nan, np.nan, lw=1, c=C_.COLOR_DICT[b], label=label)
 	ax.grid(alpha=0.5)
 	title = f'multiband light curve & parametric model samples\n'
 	title += f'method: {method} - '+' - '.join([f'{b}-error: {np.mean(fit_errors_bdict[b]):.2f}$\pm${np.std(fit_errors_bdict[b]):.1f}' for b in band_names])+'\n'

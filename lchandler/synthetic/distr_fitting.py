@@ -22,24 +22,24 @@ class CustomRotor():
 	def transform(self, obse, obs):
 		x = np.concatenate([obse[:,None], obs[:,None]], axis=-1)
 		assert x.shape[-1]==2
-		x[:,1] = x[:,1]-self.n
-		x = (self.rot@x.T).T
-		x[:,0] = -1*x[:,0]
+		#x[:,1] = x[:,1]-self.n
+		#x = (self.rot@x.T).T
+		#x[:,0] = -1*x[:,0]
 		return x[:,0], x[:,1]
 
 	def inverse_transform(self, obse, obs):
 		x = np.concatenate([obse[:,None], obs[:,None]], axis=-1)
 		assert x.shape[-1]==2
-		x[:,0] = -1*x[:,0]
-		x = (self.inv_rot@x.T).T
-		x[:,1] = x[:,1]+self.n
+		#x[:,0] = -1*x[:,0]
+		#x = (self.inv_rot@x.T).T
+		#x[:,1] = x[:,1]+self.n
 		return x[:,0], x[:,1]
 
 ###################################################################################################################################################
 
 class ObsErrorConditionalSampler():
 	def __init__(self, lcdataset:dict, set_name:str, b:str,
-		samples_per_range:int=50,
+		samples_per_range:int=25,
 		rank_threshold=0.04,
 		dist_threshold=5e-4,
 		neighborhood_n=10,
@@ -61,31 +61,36 @@ class ObsErrorConditionalSampler():
 		self.reset()
 		
 	def get_m_n(self):
-		obse = []
-		obs = []
-		for k1 in range(len(self.raw_obse)):
-			obse1 = self.raw_obse[k1]
-			obs1 = self.raw_obs[k1]
-			if obs1>self.rank_threshold:
-				continue
-			neighborhood = 0
-			for k2 in range(len(self.raw_obse)):
-				if k1==k2:
+		if 0:
+			obse = []
+			obs = []
+			for k1 in range(len(self.raw_obse)):
+				obse1 = self.raw_obse[k1]
+				obs1 = self.raw_obs[k1]
+				if obs1>self.rank_threshold:
 					continue
-				obse2 = self.raw_obse[k2]
-				obs2 = self.raw_obs[k2]
-				dist = np.linalg.norm(np.array([obse1-obse2, obs1-obs2]))
-				if dist<=self.dist_threshold:
-					neighborhood += 1
-					if neighborhood>=self.neighborhood_n:
-						obse.append(obse1)
-						obs.append(obs1)
-						break
+				neighborhood = 0
+				for k2 in range(len(self.raw_obse)):
+					if k1==k2:
+						continue
+					obse2 = self.raw_obse[k2]
+					obs2 = self.raw_obs[k2]
+					dist = np.linalg.norm(np.array([obse1-obse2, obs1-obs2]))
+					if dist<=self.dist_threshold:
+						neighborhood += 1
+						if neighborhood>=self.neighborhood_n:
+							obse.append(obse1)
+							obs.append(obs1)
+							break
 
-		assert len(obse)>0
-		obse = np.array(obse)
-		obs = np.array(obs)
-		rank_ranges, index_per_range, ranks = get_linspace_ranks(obs, self.samples_per_range)
+			assert len(obse)>0
+			obse = np.array(obse)
+			obs = np.array(obs)
+			rank_ranges, index_per_range, ranks = get_linspace_ranks(obs, self.samples_per_range)
+		else:
+			obse = np.array(self.raw_obse)
+			obs = np.array(self.raw_obs)
+			rank_ranges, index_per_range, ranks = get_linspace_ranks(obs, self.samples_per_range)
 
 		self.lr_x = []
 		self.lr_y = []
@@ -94,9 +99,9 @@ class ObsErrorConditionalSampler():
 				continue
 			sub_obse = obse[indexs]
 			sub_obs = obs[indexs]
-			i = sub_obse.argmax()
-			self.lr_x.append(sub_obse[i])
-			self.lr_y.append(sub_obs[i])
+			#self.lr_x.append(np.argmax(sub_obse))
+			self.lr_x.append(np.percentile(sub_obse, 50))
+			self.lr_y.append(np.percentile(sub_obs, 50))
 
 		#print(self.lr_x, self.lr_y)
 		slope, intercept, r_value, p_value, std_err = stats.linregress(self.lr_x, self.lr_y)
@@ -112,7 +117,7 @@ class ObsErrorConditionalSampler():
 		p = 1
 		self.obse, self.obs = self.rotor.transform(self.raw_obse, self.raw_obs)
 		valid_indexs = np.where(
-			(self.obse>=0) &
+			#(self.obse>=0) &
 			(self.obs>np.percentile(self.obs, p)) & (self.obs<np.percentile(self.obs, 100-p))
 		)
 		self.obse = self.obse[valid_indexs]
@@ -127,8 +132,9 @@ class ObsErrorConditionalSampler():
 		obse_values = self.obse[obs_indexs]
 		p = (1-np.exp(-k*0.5))*5
 		obse_values,_ = dropout_extreme_percentiles(obse_values, p, mode='both')
-		distr = getattr(stats, 'gamma')
-		params = distr.fit(obse_values, floc=0)
+		distr = getattr(stats, 'norm') # gamma, norm
+		params = distr.fit(obse_values)
+		#params = distr.fit(obse_values, floc=0)
 		return {'distr':distr, 'params':params}
 	
 	def get_percentile_range(self, obs):
