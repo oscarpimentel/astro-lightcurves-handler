@@ -72,13 +72,16 @@ def drop_duplicates(df,
 def process_df_detections(df, index_name, new_index_name, detections_cols,
 	uses_corr=True,
 	npartitions=C_.N_DASK,
+	clean_detections=True,
 	):
 	assert df.index.name==index_name
 	df.index.rename(new_index_name, inplace=True) # rename index
 	df = df.reset_index()
 	df = drop_duplicates_mjd(df, new_index_name)
-	df = delete_invalid_detections(df, new_index_name, uses_corr, npartitions)
-	#df = delete_invalid_objs(df, new_index_name) # deletes a lot of objects
+	if clean_detections:
+		df = delete_invalid_detections(df, new_index_name, uses_corr, npartitions)
+		#df = delete_invalid_objs(df, new_index_name) # deletes a lot of objects
+		
 	df = subset_df_columns(df, detections_cols+[new_index_name]) # sub sample columns
 	df = df.set_index([new_index_name])
 	objs = list(set(df.index))

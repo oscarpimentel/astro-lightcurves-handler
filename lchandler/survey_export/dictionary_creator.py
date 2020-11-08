@@ -113,7 +113,7 @@ class LightCurveDictionaryCreator():
 		#band_names = list(self.band_dictionary.keys())[:3]
 		label_samples = self.labels_df[self.df_index_names['label']].values
 		to_plot = {'class samples':[self.label_to_class_dict[l] for l in label_samples]}
-		title = f'classes & obs distributions\n'
+		title = f'class populations distributions\n'
 		title += f'survey: {self.survey_name} - class samples: {len(label_samples):,}'
 
 		if add_band_lengths: # slow process
