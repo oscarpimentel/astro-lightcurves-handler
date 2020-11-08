@@ -1,15 +1,35 @@
 import numpy as np
 
 ###################################################################################################################################################
+EPS = 1e-12
 
 ### EXPORT
 N_DASK = 4
 
-### SYNTHETIC
-NORMAL_STD_SCALE = 0.5
-EPS = 1e-12
+### LENGTHS
+MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT = 5
+MIN_POINTS_LIGHTCURVE_DEFINITION = 2
+MIN_POINTS_LIGHTCURVE_TO_PMFIT = 3
+MIN_POINTS_LIGHTCURVE_DEFINITION_FATS = 4
 
-### INDEXS
+### FILE TYPES
+EXT_RAW_LIGHTCURVE = 'rawlcd' # no split, as RAW ZTF/FSNes
+EXT_SPLIT_LIGHTCURVE = 'slcd' # with proper train/vali split, vali is balanced in classes
+EXT_PARAMETRIC_LIGHTCURVE = 'plcd' # with sigma clipping and fitted parametric model
+EXT_FATS_LIGHTCURVE = 'flcd' # with sigma clipping and FATS
+
+### SYNTHETIC
+OBSE_STD_SCALE = 1
+CPDS_P = 0.015 # curve points down sampling probability
+HOURS_NOISE_AMP = 16
+MIN_CADENCE_DAYS = 3
+MAX_OBS_ERROR = 1e10
+
+### LC GENERAL
+DEFAULT_ZP = 48.6
+DEFAULT_FLUX_SCALE = 1e26 # 1e0, 1e26
+DEFAULT_MAG_SCALE = 1
+
 DAYS_INDEX = 0
 OBS_INDEX = 1
 OBS_ERROR_INDEX = 2
@@ -68,18 +88,6 @@ XLABEL_DICT = {
 	'd_obse':'$\\Delta \sigma_{xij}$ values',
 }
 
-### LENGTHS
-MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT = 5
-MIN_POINTS_LIGHTCURVE_DEFINITION = 2
-MIN_POINTS_LIGHTCURVE_TO_PMFIT = 3
-MIN_POINTS_LIGHTCURVE_DEFINITION_FATS = 4
-
-### FILE TYPES
-EXT_RAW_LIGHTCURVE = 'rawlcd' # no split, as RAW ZTF/FSNes
-EXT_SPLIT_LIGHTCURVE = 'slcd' # with proper train/vali split, vali is balanced in classes
-EXT_PARAMETRIC_LIGHTCURVE = 'plcd' # with sigma clipping and fitted parametric model
-EXT_FATS_LIGHTCURVE = 'flcd' # with sigma clipping and FATS
-
 ### BANDS
 COLOR_DICT = {
 	'u':'#0396A6',
@@ -89,9 +97,3 @@ COLOR_DICT = {
 	'z':'#F2E749',
 	'y':'#404040',
 }
-
-#DEFAULT_SCPD_PS = [0.0, 0.25, 0.5, 0.75]
-DEFAULT_ZP = 48.6
-#DEFAULT_FLUX_SCALE = 1
-DEFAULT_FLUX_SCALE = 1e26
-DEFAULT_MAG_SCALE = 1

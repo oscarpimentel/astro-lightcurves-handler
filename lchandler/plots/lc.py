@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import flamingchoripan.lists as lists
 from flamingchoripan.cuteplots.utils import save_fig
+import scipy.stats as stats
 
 ###################################################################################################################################################
 
@@ -77,8 +78,8 @@ def plot_lightcurve(ax, lcobj, b,
 	x_margin_offset_percent:float=1,
 	y_margin_offset_percent:float=10,
 	is_synthetic:bool=False,
-	std_factor:int=1, # asuming error as error = std*2
-	# 1:68.27%, 2:95.45%, 3:99.73%
+	std_factor:int=C_.OBSE_STD_SCALE, # asuming error as gaussian error
+	percentile_bar:float=0.90, # show bars as percentile bound
 	):
 	lcobjb = lcobj.get_b(b)
 	new_days = lcobjb.days
@@ -87,11 +88,12 @@ def plot_lightcurve(ax, lcobj, b,
 	obs = lcobjb.obs[valid_indexs]
 	obse = lcobjb.obse[valid_indexs]
 
+	bar = stats.norm(loc=0, scale=std_factor*obse).ppf(percentile_bar)
 	color = C_.COLOR_DICT[b]
 	if mode=='shadow':
-		ax.fill_between(new_days, obs-obse*std_factor, obs+obse*std_factor, facecolor=color, alpha=alpha)
+		ax.fill_between(new_days, obs-bar, obs+bar, facecolor=color, alpha=alpha)
 	elif mode=='bar':
-		ax.errorbar(new_days, obs, yerr=obse*std_factor, color=color, capsize=capsize, elinewidth=1, linewidth=0)
+		ax.errorbar(new_days, obs, yerr=bar, color=color, capsize=capsize, elinewidth=1, linewidth=0)
 	else:
 		raise Exception(f'not supported mode: {mode}')
 	

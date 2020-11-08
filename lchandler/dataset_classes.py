@@ -7,6 +7,7 @@ import random
 import copy
 from flamingchoripan.datascience.statistics import get_sigma_clipping_indexing, get_populations_cdict
 from flamingchoripan.prints import HiddenPrints, ShowPrints
+from flamingchoripan.strings import get_bar
 from flamingchoripan.level_bars import LevelBar
 from .lc_classes import diff_vector
 
@@ -48,10 +49,10 @@ class LCDataset():
 		return self.lcsets[lcset_name]
 
 	def __repr__(self):
-		txt = 'LCDataset(\n'
+		txt = 'LCDataset:\n'
 		for lcset_name in self.get_lcset_names():
 			txt += f'[{lcset_name} - samples {len(self[lcset_name]):,}]\n{self[lcset_name]}\n'
-		txt += ')'
+			txt += get_bar()+'\n'
 		return txt
 
 	def clean_empty_obs_keys(self):

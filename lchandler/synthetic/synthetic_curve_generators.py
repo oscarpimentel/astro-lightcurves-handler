@@ -69,13 +69,13 @@ class SynSNeGeneratorCF():
 		new_bounds=True,
 		pow_obs_error:bool=False,
 		replace_nan_inf:bool=True,
-		max_obs_error:float=1e10,
+		max_obs_error:float=C_.MAX_OBS_ERROR,
 		uses_random_guess:bool=False,
 
-		hours_noise_amp:float=5,
-		cpds_p:float=0.015,
+		hours_noise_amp:float=C_.HOURS_NOISE_AMP,
+		cpds_p:float=C_.CPDS_P,
 		std_scale:float=C_.NORMAL_STD_SCALE,
-		min_cadence_days:float=3.,
+		min_cadence_days:float=C_.MIN_CADENCE_DAYS,
 		min_synthetic_len_b:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		):
 		#self.pm_features = ['A', 't0', 'gamma', 'f', 'trise', 'tfall']; self.fun = syn_sne_fun; self.inv_fun = inverse_syn_sne_fun
@@ -407,10 +407,10 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 		max_obs_error:float=1e10,
 		uses_random_guess:bool=False,
 
-		hours_noise_amp:float=5,
-		cpds_p:float=0.015, # used only in curve_fit mode
+		hours_noise_amp:float=C_.HOURS_NOISE_AMP,
+		cpds_p:float=C_.CPDS_P, # used only in curve_fit mode
 		std_scale:float=C_.NORMAL_STD_SCALE,
-		min_cadence_days:float=3.,
+		min_cadence_days:float=C_.MIN_CADENCE_DAYS,
 		min_synthetic_len_b:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		):
 		super().__init__(lcobj, class_names, band_names, obse_sampler_bdict, length_sampler_bdict,
@@ -446,8 +446,7 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 			'tune':n_tune, # burn-in steps
 			'cores':cores,
 			'progressbar':False,
-			#'target_accept':.95,
-			'target_accept':1.,
+			'target_accept':1., # 0.95, 1
 		}
 		pm_bounds = self.get_pm_bounds(lcobjb)[self.c]
 		import logging; logger = logging.getLogger('pymc3'); logger.setLevel(logging.ERROR) # remove logger

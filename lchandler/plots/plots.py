@@ -71,11 +71,11 @@ def plot_obse_samplers(lcdataset, set_name, obse_sampler_bdict,
 			ax.plot(obse_sampler.raw_obse, obse_sampler.raw_obs, 'k.', markersize=2, alpha=0.2); ax.plot(np.nan, np.nan, 'k.', label=label)
 			x = np.linspace(obse_sampler.raw_obse.min(), obse_sampler.raw_obse.max(), 100)
 			ax.plot(x, x*obse_sampler.m+obse_sampler.n, 'b', alpha=0.75, label='rotation axis', lw=1)
-			ax.plot(obse_sampler.lr_x, obse_sampler.lr_y, 'b.', alpha=1, markersize=4); ax.plot(np.nan, np.nan, 'b.', label='rotation axis support samples')
+			#ax.plot(obse_sampler.lr_x, obse_sampler.lr_y, 'b.', alpha=1, markersize=4); ax.plot(np.nan, np.nan, 'b.', label='rotation axis support samples')
 
 			### add samples
 			if add_samples:
-				n = int(1e3)
+				n = int(2e3)
 				to_sample = obse_sampler.raw_obs
 				std = 1e-4
 				new_obs = [np.random.normal(to_sample[np.random.randint(0, len(to_sample))], std) for _ in range(n)] # kde
@@ -93,7 +93,7 @@ def plot_obse_samplers(lcdataset, set_name, obse_sampler_bdict,
 			for p_idx in range(len(obse_sampler.distrs)):
 				d = obse_sampler.distrs[p_idx]
 				
-				if p_idx%4==0:
+				if p_idx%10==0:
 					rank_ranges = obse_sampler.rank_ranges[p_idx]
 					pdf_offset = rank_ranges[1] # upper of rank range
 					pdfy = d['distr'].pdf(pdfx, *d['params'])

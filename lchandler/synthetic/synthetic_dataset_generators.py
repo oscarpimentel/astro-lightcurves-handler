@@ -18,7 +18,7 @@ def get_syn_sne_generator(method_name):
 
 def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_sampler_bdict,
 	method='curve_fit',
-	synthetic_samples_per_curve:float=2,
+	synthetic_samples_per_curve:float=4,
 	add_original=True,
 	ignored_lcobj_names=[],
 	save_rootdir=None,

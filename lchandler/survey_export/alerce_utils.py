@@ -5,6 +5,7 @@ from . import C_
 import numpy as np
 import pandas as pd
 from dask import dataframe as dd
+import warnings
 
 ###################################################################################################################################################
 
@@ -30,7 +31,7 @@ def delete_invalid_detections(df, index_name,
 			(ddf['isdiffpos']==-1) | # bad photometry
 			(ddf[days_col].isna()) | # delete nans
 			(ddf[obs_col].isna()) | # delete nans
-			(ddf[obse_col].isna()) | # delete nans
+			(ddf[obse_col].isna())  # delete nans
 			(ddf[obse_col]>=100) # 100 error only with corr version
 		)].compute() # FAST
 	else:
@@ -75,9 +76,12 @@ def process_df_detections(df, index_name, new_index_name, detections_cols,
 	clean_detections=True,
 	):
 	assert df.index.name==index_name
+	if not uses_corr:
+		warnings.warn('only use uses_corr=False with SNe objects')
 	df.index.rename(new_index_name, inplace=True) # rename index
 	df = df.reset_index()
-	df = drop_duplicates_mjd(df, new_index_name)
+	df = drop_duplicates_mjd(df, new_index_name) # delete more samples
+	#df = drop_duplicates(df) # some samples can bypass this as there are different obs in same days
 	if clean_detections:
 		df = delete_invalid_detections(df, new_index_name, uses_corr, npartitions)
 		#df = delete_invalid_objs(df, new_index_name) # deletes a lot of objects

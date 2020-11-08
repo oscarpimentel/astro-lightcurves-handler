@@ -244,7 +244,6 @@ class LightCurveDictionaryCreator():
 				lcobj = lcc.LCO()
 
 				### get detections
-				#print(lcobj_name)
 				obj_df = detections_ddf.loc[lcobj_name].compute() # FAST
 				for kb,b in enumerate(band_names):
 					band_object_df = obj_df[obj_df[band_dfkey] == self.band_dictionary[b]]
@@ -264,6 +263,9 @@ class LightCurveDictionaryCreator():
 					lcobj.dec = dec
 					lcdataset['raw'].set_lcobj(lcobj_name, lcobj)
 					correct_samples += 1
+				else:
+					pass
+					#print(lcobj_name)
 				
 				bar(f'obj: {lcobj_name} - y: {y} - c: {self.class_names[y]} - lengths_bdict: {lengths_bdict} - correct_samples (any-band>={any_band_points}): {correct_samples:,}')
 					
