@@ -14,11 +14,11 @@ def diff_vector(x:np.ndarray):
 	x = x[...,None]
 	to_append = np.expand_dims(x[0,...], axis=1)
 	dx = np.diff(x, axis=0, prepend=to_append.T)
-	return dx[:,0].astype(np.float32)
+	return dx[:,0]
 
 def log_vector(x:np.ndarray):
 	assert np.all(x>=0)
-	return np.log(x+1).astype(np.float32)
+	return np.log(x+1)
 
 ###################################################################################################################################################
 
@@ -44,18 +44,18 @@ class SubLCO():
 
 	def set_days(self, days):
 		assert len(days.shape)==1
-		assert np.all(diff_vector(days)>=0) # check if days are in order
-		self.days = days.astype(np.float32)
+		assert np.all((diff_vector(days)>0)[1:]) # check if days are in order
+		self.days = days
 
 	def set_obs(self, obs):
 		assert len(obs.shape)==1
 		assert np.all(obs>=0)
-		self.obs = obs.astype(np.float32)
+		self.obs = obs
 
 	def set_obse(self, obs_errors):
 		assert len(obs_errors.shape)==1
 		assert np.all(obs_errors>=0)
-		self.obse = obs_errors.astype(np.float32)
+		self.obse = obs_errors
 
 	def add_day_values(self, values,
 		recalculate:bool=True,
@@ -69,7 +69,7 @@ class SubLCO():
 		assert len(self)==len(values)
 		new_days = self.days+values
 		valid_indexs = np.argsort(new_days) # must sort before the values to mantain sequenciality
-		self.days = new_days.astype(np.float32) # bypass set_days() because non-sorted asumption
+		self.days = new_days # bypass set_days() because non-sorted asumption
 		self.apply_valid_indexs_to_attrs(valid_indexs) # apply valid indexs to all
 
 		### calcule again
@@ -198,7 +198,7 @@ class SubLCO():
 
 	def get_custom_x(self, attrs:list):
 		values = [self.get_attr(attr)[...,None] for attr in attrs]
-		x = np.concatenate(values, axis=-1)#.astype(values[0].dtype)
+		x = np.concatenate(values, axis=-1)
 		return x
 
 	def get_first_day(self):
@@ -305,7 +305,7 @@ class LCO():
 
 	def get_sorted_days_indexs_serial(self):
 		values = [getattr(self, b).days for b in self.bands]
-		all_days = np.concatenate(values, axis=0)#.astype(values[0].dtype)
+		all_days = np.concatenate(values, axis=0)
 		sorted_days_indexs = np.argsort(all_days)
 		return sorted_days_indexs
 
@@ -340,7 +340,7 @@ class LCO():
 		max_day:float=np.infty,
 		):
 		values = [self.get_b(b).get_custom_x(attrs) for b in self.bands]
-		x = np.concatenate(values, axis=0)#.astype(values[0].dtype)
+		x = np.concatenate(values, axis=0)
 		sorted_days_indexs = self.get_sorted_days_indexs_serial() if sorted_days_indexs is None else sorted_days_indexs
 		x = x[sorted_days_indexs]
 

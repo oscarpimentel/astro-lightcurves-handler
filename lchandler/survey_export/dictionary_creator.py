@@ -22,7 +22,6 @@ class LightCurveDictionaryCreator():
 	def __init__(self, survey_name:str, detections_df:pd.DataFrame, labels_df:pd.DataFrame, band_dictionary:dict, df_index_names:dict,
 		obs_is_flux:bool=True,
 		label_to_class_dict:dict=None,
-		remove_negative_fluxes:bool=True,
 		zero_point:float=C_.DEFAULT_ZP,
 		flux_scale:float=C_.DEFAULT_FLUX_SCALE,
 		maximum_samples_per_class:int=None,
@@ -41,7 +40,6 @@ class LightCurveDictionaryCreator():
 		self.obs_is_flux = obs_is_flux
 		self.label_to_class_dict_original = (self.generate_label_to_class_dict() if label_to_class_dict is None else label_to_class_dict.copy())
 		self.class_to_label_dict_original = self.generate_class_to_label_dict(self.label_to_class_dict_original)
-		self.remove_negative_fluxes = remove_negative_fluxes
 		self.zero_point = zero_point
 		self.flux_scale = flux_scale
 		self.maximum_samples_per_class = maximum_samples_per_class
@@ -92,7 +90,6 @@ class LightCurveDictionaryCreator():
 			for label_fusion in labels_fusion_list:
 				self.labels_df.loc[self.labels_df[self.df_index_names['label']]==label_fusion, self.df_index_names['label']] = to_merge_classes_key
 		
-		print(f'labels_df:\n{self.labels_df}')
 		### classes
 		self.classes_names, self.labels_names, self.total_classes = self.get_classes_from_df()
 
@@ -153,12 +150,9 @@ class LightCurveDictionaryCreator():
 	#################################### EXPORT
 
 	def get_label(self, labels_df:pd.DataFrame, lcobj_name:str, easy_label_dict:dict):
-		try:
-			label = labels_df[self.df_index_names['label']][lcobj_name]
-			uint_label = easy_label_dict[label]
-			return uint_label, True
-		except:
-			return None, False
+		label = labels_df[self.df_index_names['label']][lcobj_name]
+		uint_label = easy_label_dict[label]
+		return uint_label
 
 	def get_radec(self, labels_df:pd.DataFrame, lcobj_name:str):
 		try:
@@ -169,145 +163,99 @@ class LightCurveDictionaryCreator():
 			return None, None
 
 	def export_dictionary(self, description:str, save_folder:str,
-		to_export_bands:list=None,
-		SCPD_probs:list=[1.],
+		band_names:list=None,
 		filename_extra_parameters:dict={},
-		saves_every:int=100,
 		npartitions:int=C_.N_DASK,
 		):
-		uses_saves_every = saves_every>0
 		class_dfkey = self.df_index_names['label']
 		band_dfkey = self.df_index_names['band']
 
-		lcobj_names = list(self.labels_df[class_dfkey].keys().values)
-		lcobj_names.sort()
-		print(f'lcobj_names examples: {lcobj_names[:10]}')
+		### separate bands for optimal
+		band_names = list(self.band_dictionary.keys()) if band_names is None else band_names
+		print(f'band_names: {band_names}')
 
-		# separate bands for optimal
-		to_export_bands = (list(self.band_dictionary.keys()) if to_export_bands is None else to_export_bands)
-		print(f'to_export_bands: {to_export_bands}')
-
-		# CLEAN THE DATAFRAME PLEASE!
-		index_subset = [self.df_index_names['oid']]
-		integer_subset = [self.df_index_names['band']]
-		float_subset = [self.df_index_names['obs_day'], self.df_index_names['obs'], self.df_index_names['obs_error']]
-		subset = index_subset + integer_subset + float_subset
-		detections_df = self.detections_df
-		detections_df = detections_df.reset_index()[subset]
-		for set_ in float_subset:
-			detections_df[set_] = detections_df[set_].astype(np.float32)
+		### clean dataframe
+		detections_df = self.detections_df.reset_index()
 
 		print(f'cleaning the DataFrame... - original samples: {len(detections_df):,}')
 		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
 
-		detections_df = detections_df.loc[detections_df[self.df_index_names['band']].isin([self.band_dictionary[b] for b in to_export_bands])]
+		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
+		detections_df = detections_ddf.loc[detections_ddf[self.df_index_names['band']].isin([self.band_dictionary[b] for b in band_names])].compute()
 		print(f'remove_invalid_bands - samples: {len(detections_df):,}')
-		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
 
-		detections_df = detections_df.loc[detections_df[self.df_index_names['oid']].isin(lcobj_names)]
+		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
+		detections_df = detections_ddf.loc[detections_ddf[self.df_index_names['oid']].isin(list(set(self.labels_df.index)))].compute()
 		print(f'remove_invalid_classes - samples: {len(detections_df):,}')
-		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
 
-		detections_df = detections_df.dropna(how='any') # VERY SLOW
-		print(f'drop_nans - samples: {len(detections_df):,}')
-		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
+		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
+		detections_df = detections_ddf.loc[detections_ddf[self.df_index_names['obs']]>0].compute()
+		print(f'remove_negative_obs - samples: {len(detections_df):,}')
 
-		if self.remove_negative_fluxes:
-			detections_df = detections_df.loc[detections_df[self.df_index_names['obs']] > 0]
-			print(f'remove_negative_fluxes - samples: {len(detections_df):,}')
-
-		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
 		detections_df = detections_df.set_index(self.df_index_names['oid'])
-		print(f'creating dask DataFrame - npartitions: {npartitions} ...')
-		npartitions = npartitions
-		detections_dd = dd.from_pandas(detections_df, npartitions=npartitions)
 
-		# PREPARE NEW DATASET
+		### prepare dataset
 		lcset = dsc.LCSet(
 			{},
 			self.survey_name,
 			description,
-			to_export_bands,
+			band_names,
 			self.classes_names,
 			True,
 		)
 		lcdataset = dsc.LCDataset()
 		lcdataset.set_lcset('raw', lcset)
 
-		# GET FILENAME
+		### get filename
 		filename_parameters = {
 			'survey':self.survey_name,
-			'bands':''.join(to_export_bands),
+			'bands':''.join(band_names),
 		}
 		filename_parameters.update(filename_extra_parameters)
 		filedir = f'{save_folder}/{self.get_dict_name(filename_parameters)}.{C_.EXT_RAW_LIGHTCURVE}'
 		print(f'filedir: {filedir}')
 
-		# EASY DICT
+		### easy dict
 		easy_label_dict = {self.class_to_label_dict[c]:kc for kc,c in enumerate(self.classes_names)}
 		print(f'easy_label_dict: {easy_label_dict}')
 
-		# START LOOP
+		# start loop
 		correct_samples = 0
-		calculated_cache = 0
+		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
+		lcobj_names = list(set(detections_df.index))
 		bar = ProgressBar(len(lcobj_names))
-		for i,lcobj_name in enumerate(lcobj_names):
+		for k,lcobj_name in enumerate(lcobj_names):
 			try:
 				lcobj = lcc.LCO()
-				pass_cond = False
-				calculated_cache += 1
-				y = None
-				lengths_bdict = None
-				try:
-					obj_df = detections_dd.loc[[lcobj_name]].compute() # FAST
-					for kb,b in enumerate(to_export_bands):
-						band_object_df = obj_df[obj_df[band_dfkey] == self.band_dictionary[b]]
-						original_lc = band_object_df[[self.df_index_names['obs_day'], self.df_index_names['obs'], self.df_index_names['obs_error']]].values.astype(np.float32)
-						band_lc_flux = self.get_band(original_lc)
-						#print('band_lc_flux',band_lc_flux.shape,band_lc_flux)
-						lcobj.add_b(b, band_lc_flux[:,0], band_lc_flux[:,1], band_lc_flux[:,2])
 
-					lcobj.reset_day_offset_serial()
+				### get detections
+				#print(lcobj_name)
+				obj_df = detections_ddf.loc[lcobj_name].compute() # FAST
+				for kb,b in enumerate(band_names):
+					band_object_df = obj_df[obj_df[band_dfkey] == self.band_dictionary[b]]
+					original_lc = band_object_df[[self.df_index_names['obs_day'], self.df_index_names['obs'], self.df_index_names['obs_error']]].values
+					band_lc_flux = self.get_band(original_lc)
+					lcobj.add_b(b, band_lc_flux[:,0], band_lc_flux[:,1], band_lc_flux[:,2])
+				lcobj.reset_day_offset_serial()
 
-					### get lengths
-					lengths_cond = np.any([len(lcobj.get_b(b))>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in to_export_bands])
+				### get label
+				y = self.get_label(self.labels_df, lcobj_name, easy_label_dict)
+				lcobj.set_y(y)
 
-					### get label
-					y, y_cond = self.get_label(self.labels_df, lcobj_name, easy_label_dict)
-					lcobj.set_y(y)
-					pass_cond = lengths_cond and y_cond
-
-				except KeyError:
-					pass_cond = False
-
-				if pass_cond:
-					lengths_bdict = lcobj.get_length_bdict()
+				lengths_bdict = {b:len(lcobj.get_b(b)) for b in band_names}
+				if any([lengths_bdict[b]>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in band_names]):
 					ra, dec = self.get_radec(self.labels_df, lcobj_name)
 					lcobj.ra = ra
 					lcobj.dec = dec
 					lcdataset['raw'].set_lcobj(lcobj_name, lcobj)
 					correct_samples += 1
 				
-				text = f'obj: {lcobj_name} - y: {y} - lengths_bdict: {lengths_bdict}'
-				text += f' - pass_cond: {pass_cond} - correct_samples: {correct_samples:,}'
-				
-				bar(text)
-				# saving the dict for mental sanity
-				if uses_saves_every and calculated_cache>=saves_every:
-					calculated_cache = 0
-					save_pickle(filedir, lcdataset)
-				
-				if i>500:
-					#assert 0, 'test'
-					pass
+				bar(f'obj: {lcobj_name} - y: {y} - lengths_bdict: {lengths_bdict} - correct_samples: {correct_samples:,}')
 					
 			except KeyboardInterrupt:
 				bar.done()
 				print('stopped!')
 				break
-
-			except:
-				assert 0, 'report error and proceed'
 
 		bar.done()
 		print(f'last dictionary save! filedir: {filedir}')

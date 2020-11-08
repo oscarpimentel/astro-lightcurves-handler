@@ -17,12 +17,6 @@ def subset_df_columns(df, subset_cols):
 	df_cols = list(df.columns)
 	return df[[c for c in subset_cols if c in df_cols]]
 
-def df_to_float32(df):
-	for c in df.columns:
-		if df[c].dtype=='float64':
-			df[c] = df[c].astype(np.float32)
-	return df
-
 def delete_invalid_detections(df, index_name,
 	uses_corr:True,
 	npartitions=C_.N_DASK,
@@ -33,9 +27,9 @@ def delete_invalid_detections(df, index_name,
 	if uses_corr:
 		df = ddf[~(
 			(ddf['isdiffpos']==-1) |
-			(ddf[obse_index]==100) |
 			(ddf[obs_index].isna()) | # delete nans
-			(ddf[obse_index].isna()) # delete nans
+			(ddf[obse_index].isna()) | # delete nans
+			(ddf[obse_index]>=100)
 		)].compute() # FAST
 	else:
 		df = ddf[~(
@@ -48,6 +42,18 @@ def delete_invalid_detections(df, index_name,
 def filter_by_valid_objs(df, valid_objs):
 	return df[df.index.isin(valid_objs)]
 
+def drop_duplicates_mjd(df, new_index_name,
+	npartitions=C_.N_DASK,
+	):
+	ddf = dd.from_pandas(df, npartitions=npartitions)
+	return ddf.drop_duplicates(subset=[new_index_name, 'fid','mjd']).compute() # FAST
+
+def drop_duplicates(df,
+	npartitions=C_.N_DASK,
+	):
+	ddf = dd.from_pandas(df, npartitions=npartitions)
+	return ddf.drop_duplicates().compute() # FAST
+
 ###################################################################################################################################################
 
 def process_df_detections(df, index_name, new_index_name, detections_cols,
@@ -57,7 +63,7 @@ def process_df_detections(df, index_name, new_index_name, detections_cols,
 	assert df.index.name==index_name
 	df.index.rename(new_index_name, inplace=True) # rename index
 	df = df.reset_index()
-	df = df_to_float32(df)
+	df = drop_duplicates_mjd(df, new_index_name)
 	df = delete_invalid_detections(df, new_index_name, uses_corr, npartitions)
 	df = subset_df_columns(df, detections_cols+[new_index_name]) # sub sample columns
 	df = df.set_index([new_index_name])
@@ -65,7 +71,7 @@ def process_df_detections(df, index_name, new_index_name, detections_cols,
 	return df, objs
 
 def process_df_labels(df, new_index_name, det_objs):
-	df = df_to_float32(df)
+	df = drop_duplicates(df)
 	df = df.set_index([new_index_name])
 	df = filter_by_valid_objs(df, det_objs) # clean labels dataframe
 	objs = list(set(df.index))
