@@ -27,15 +27,15 @@ def delete_invalid_detections(df, index_name,
 	ddf = dd.from_pandas(df, npartitions=npartitions)
 	if uses_corr:
 		df = ddf[~(
-			(ddf['isdiffpos']==-1) |
+			(ddf['isdiffpos']==-1) | # bad photometry
 			(ddf[days_col].isna()) | # delete nans
 			(ddf[obs_col].isna()) | # delete nans
 			(ddf[obse_col].isna()) | # delete nans
-			(ddf[obse_col]>=100)
+			(ddf[obse_col]>=100) # 100 error only with corr version
 		)].compute() # FAST
 	else:
 		df = ddf[~(
-			(ddf['isdiffpos']==-1) |
+			(ddf['isdiffpos']==-1) | # bad photometry
 			(ddf[days_col].isna()) | # delete nans
 			(ddf[obs_col].isna()) | # delete nans
 			(ddf[obse_col].isna()) # delete nans
@@ -78,7 +78,7 @@ def process_df_detections(df, index_name, new_index_name, detections_cols,
 	df = df.reset_index()
 	df = drop_duplicates_mjd(df, new_index_name)
 	df = delete_invalid_detections(df, new_index_name, uses_corr, npartitions)
-	#df = delete_invalid_objs(df, new_index_name)
+	#df = delete_invalid_objs(df, new_index_name) # deletes a lot of objects
 	df = subset_df_columns(df, detections_cols+[new_index_name]) # sub sample columns
 	df = df.set_index([new_index_name])
 	objs = list(set(df.index))
