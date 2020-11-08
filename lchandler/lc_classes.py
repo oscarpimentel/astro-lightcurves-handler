@@ -26,6 +26,9 @@ def log_vector(x:np.ndarray):
 	assert np.all(x>=0)
 	return np.log(x+1)
 
+def inv_log_vector(x:np.ndarray):
+	return np.exp(x)-1
+
 ###################################################################################################################################################
 
 class SubLCO():
@@ -50,7 +53,7 @@ class SubLCO():
 
 	def set_days(self, days):
 		assert len(days.shape)==1
-		assert np.all((diff_vector(days)>0)[1:]) # check if days are in order
+		assert np.all((diff_vector(days, uses_prepend=False)>0)) # check if days are in order
 		self.days = days
 
 	def set_obs(self, obs):
@@ -78,7 +81,7 @@ class SubLCO():
 		self.days = new_days # bypass set_days() because non-sorted asumption
 		self.apply_valid_indexs_to_attrs(valid_indexs) # apply valid indexs to all
 
-		### calcule again
+		### calcule again as the original values changed
 		if recalculate:
 			if hasattr(self, 'd_days'): 
 				self.set_diff('days')
@@ -107,7 +110,7 @@ class SubLCO():
 		new_obs = self.obs+values
 		self.set_obs(new_obs)
 
-		### calcule again
+		###  calcule again as the original values changed
 		if recalculate:
 			if hasattr(self, 'd_obs'):
 				self.set_diff('obs')
@@ -126,7 +129,7 @@ class SubLCO():
 		self.add_obs_values(obs_values)
 
 	def apply_downsampling(self, ds_prob,
-		min_valid_length:int=3,
+		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		recalculate:bool=True,
 		):
 		assert ds_prob>=0 and ds_prob<=1
@@ -139,6 +142,7 @@ class SubLCO():
 			valid_mask[:min_valid_length] = 1
 			valid_mask = np.random.permutation(valid_mask.astype(bool))
 
+		### calcule again as the original values changed
 		self.apply_valid_indexs_to_attrs(valid_mask, recalculate)
 
 	def get_diff(self, attr:str):
@@ -177,23 +181,36 @@ class SubLCO():
 				assert len(x.shape)==1 # 1D tensor
 				setattr(self, key, x[valid_indexs])
 
-		### calcule again
+		### calcule again as the original values changed
 		if recalculate:
 			if hasattr(self, 'd_days'):
 				self.set_diff('days')
 			if hasattr(self, 'd_obs'):
 				self.set_diff('obs')
 
-	def get_valid_indexs_max_day(self, max_day:float):
-		#return self.days<=max_day
-		return self.days-self.days[0]<=max_day # removing offset
+	def get_valid_indexs_max_day(self, max_day:float,
+		remove_offset=False,
+		):
+		offset = self.days[0] if remove_offset else 0
+		return self.days-offset<=max_day
 
-	def clip_attrs_given_max_day(self, max_day:float):
+	def clip_attrs_given_max_day(self, max_day:float,
+		remove_offset=False,
+		):
 		'''
 		Be careful, this method remove info!
 		'''
-		valid_indexs = self.get_valid_indexs_max_day(max_day)
-		self.get_valid_indexs_max_day(valid_indexs)
+		valid_indexs = self.get_valid_indexs_max_day(max_day, remove_offset)
+		self.apply_valid_indexs_to_attrs(valid_indexs)
+
+	def get_valid_indexs_max_duration(self, max_duration:float):
+		return self.get_valid_indexs_max_day(max_duration, True)
+
+	def clip_attrs_given_max_duration(self, max_duration:float):
+		'''
+		Be careful, this method remove info!
+		'''
+		self.clip_attrs_given_max_day(max_duration, True)
 
 	def get_x(self):
 		attrs = ['days', 'obs', 'obse']
@@ -214,7 +231,7 @@ class SubLCO():
 		return self.days[-1]
 
 	def get_days_duration(self):
-		return self.days[-1]-self.days[0] if len(self)>0 else None
+		return self.get_last_day()-self.get_first_day() if len(self)>0 else None
 
 	def keys(self):
 		return self.__dict__.keys()
@@ -296,6 +313,20 @@ class LCO():
 		'''
 		self.y = None if y is None else int(y)
 
+	def keys(self):
+		return self.get_b(self.bands[0]).keys()
+
+	def __repr__(self):
+		txt = ''
+		for b in self.bands:
+			obj = self.get_b(b)
+			txt += f'({b}:{len(obj)}) - {obj.__repr__()}\n'
+		return txt
+
+	def __len__(self):
+		return sum([len(self.get_b(b)) for b in self.bands])
+
+	#########  serial/multiband important methods
 	def reset_day_offset_serial(self,
 		store_day_offset:bool=False,
 		):
@@ -313,7 +344,7 @@ class LCO():
 		return day_offset
 
 	def get_sorted_days_indexs_serial(self):
-		values = [getattr(self, b).days for b in self.bands]
+		values = [self.get_b(b).days for b in self.bands]
 		all_days = np.concatenate(values, axis=0)
 		sorted_days_indexs = np.argsort(all_days)
 		return sorted_days_indexs
@@ -370,8 +401,8 @@ class LCO():
 		'''
 		Duration in days of complete light curve
 		'''
-		days = self.get_custom_x_serial(['days'], sorted_days_indexs)[:,0]
-		return days[-1]-days[0]
+		days = np.concatenate([self.get_b(b).days for b in self.bands])
+		return max(days)-min(days)
 
 	def set_diff_b(self, b:str, attr:str):
 		self.get_b(b).set_diff(attr) 
@@ -404,16 +435,3 @@ class LCO():
 
 	def get_length_bdict(self):
 		return {b:self.get_length_b(b) for b in self.bands}
-
-	def keys(self):
-		return self.get_b(self.bands[0]).keys()
-
-	def __repr__(self):
-		txt = ''
-		for b in self.bands:
-			obj = self.get_b(b)
-			txt += f'({b}:{len(obj)}) - {obj.__repr__()}\n'
-		return txt
-
-	def __len__(self):
-		return sum([len(self.get_b(b)) for b in self.bands])
