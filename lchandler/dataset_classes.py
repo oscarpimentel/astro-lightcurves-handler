@@ -8,6 +8,7 @@ import copy
 from flamingchoripan.datascience.statistics import get_sigma_clipping_indexing, get_populations_cdict
 from flamingchoripan.prints import HiddenPrints, ShowPrints
 from flamingchoripan.level_bars import LevelBar
+from .lc_classes import diff_vector
 
 ###################################################################################################################################################
 
@@ -49,7 +50,7 @@ class LCDataset():
 	def __repr__(self):
 		txt = 'LCDataset(\n'
 		for lcset_name in self.get_lcset_names():
-			txt += f'({lcset_name} - samples {len(self[lcset_name]):,})\n - {self[lcset_name]}\n'
+			txt += f'[{lcset_name} - samples {len(self[lcset_name]):,}]\n{self[lcset_name]}\n'
 		txt += ')'
 		return txt
 
@@ -206,20 +207,28 @@ class LCSet():
 	def get_populations_cdict(self):
 		return get_populations_cdict(self.get_lcobj_classes(), self.class_names)
 
-	def __repr__(self):
-		obs_len = sum([len(lcobj) for lcobj in self.get_lcobjs()])
-		obs_len_dict = {b:sum([len(lcobj.get_b(b)) for lcobj in self.get_lcobjs()]) for b in self.band_names}
-		obs_len_txt = ' - '.join([f'{b}: {obs_len_dict[b]:,}' for b in self.band_names])
+	def __repr__b(self, b, lcobjs):
+		ddays = np.concatenate([diff_vector(lcobj.get_b(b).days, False) for lcobj in lcobjs])
+		median_cadence = np.percentile(ddays, 50)
+		durations = [lcobj.get_b(b).get_days_duration() for lcobj in lcobjs]
+		durations = [d for d in durations if not d is None]
+		median_duration = np.percentile(durations, 50)
+		lengths = [len(lcobj.get_b(b)) for lcobj in lcobjs]
+		txt = ''
+		txt += f'({b}) obs_samples: {sum(lengths):,} - min_len: {min(lengths)} - max_dur: {max(durations):.1f}[days] - p50_dur: {median_duration:.1f}[days] - p50_cadence: {median_cadence:.1f}[days]\n'
+		return txt
 
+	def __repr__(self):
+		txt = ''
 		if len(self)>0:
-			txt = f'samples: {len(self):,} - obs samples: {obs_len:,} ({obs_len_txt})\n'
-			max_duration = max([lcobj.get_days_serial_duration() for lcobj in self.get_lcobjs()])
-			self.set_diff_parallel('days') # remove after?
-			median_cadence = {}
+			lcobjs = self.get_lcobjs()
+			durations = [lcobj.get_days_serial_duration() for lcobj in lcobjs]
+			median_duration = np.percentile(durations, 50)
+			lengths = [len(lcobj) for lcobj in lcobjs]
+			txt += f'(*) obs_samples: {sum(lengths):,} - min_len: {min(lengths)} - max_dur: {max(durations):.1f}[days] - p50_dur: {median_duration:.1f}[days]\n'
+
 			for b in self.band_names:
-				ddays = self.get_lcset_values_b(b, 'd_days')
-				median_cadence[b] = np.percentile(ddays[ddays>0], 50)
-			txt += f' - max_length_serial: {self.get_max_length_serial()} - max_duration: {max_duration:.2f}[days] - median_cadence: {median_cadence}\n'
+				txt += self.__repr__b(b, lcobjs)
 
 			populations_cdict = self.get_populations_cdict()
 			txt += LevelBar(populations_cdict, ' '*3).__repr__()

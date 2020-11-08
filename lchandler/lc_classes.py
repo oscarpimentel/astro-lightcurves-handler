@@ -8,13 +8,19 @@ import copy
 
 ###################################################################################################################################################
 
-def diff_vector(x:np.ndarray):
+def diff_vector(x:np.ndarray,
+	uses_prepend=True,
+	):
 	if len(x)==0:
 		return x
 	x = x[...,None]
-	to_append = np.expand_dims(x[0,...], axis=1)
-	dx = np.diff(x, axis=0, prepend=to_append.T)
-	return dx[:,0]
+	if uses_prepend:
+		to_append = np.expand_dims(x[0,...], axis=1)
+		dx = np.diff(x, axis=0, prepend=to_append.T)
+		return dx[:,0]
+	else:
+		dx = np.diff(x, axis=0)
+		return dx[:,0]
 
 def log_vector(x:np.ndarray):
 	assert np.all(x>=0)
@@ -206,6 +212,9 @@ class SubLCO():
 
 	def get_last_day(self):
 		return self.days[-1]
+
+	def get_days_duration(self):
+		return self.days[-1]-self.days[0] if len(self)>0 else None
 
 	def keys(self):
 		return self.__dict__.keys()

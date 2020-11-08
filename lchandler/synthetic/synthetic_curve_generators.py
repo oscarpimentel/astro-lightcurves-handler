@@ -42,7 +42,7 @@ def inverse_syn_sne_sfun(t, A, t0, gamma, f, trise, tfall, s):
 
 def error_syn_sne_fun(times, obs, obse, fun, fun_args):
 	syn_obs = fun(times, *fun_args)
-	error = (syn_obs-obs)**2/(obse**2)
+	error = (syn_obs-obs)**2/(obse)
 	return error.mean()
 
 def get_random_mean(a, b, r):
@@ -482,6 +482,8 @@ class SynSNeGeneratorMCMC(SynSNeGeneratorCF):
 			except ValueError:
 				raise ex.MCMCError()
 			except AssertionError:
+				raise ex.MCMCError()
+			except RuntimeError:
 				raise ex.MCMCError()
 
 		mcmc_pm_args = [{pmf:mcmc_trace[pmf][i] for pmf in self.pm_features} for i in range(0, n_samples)]

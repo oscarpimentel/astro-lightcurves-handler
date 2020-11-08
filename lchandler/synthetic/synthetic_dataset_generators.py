@@ -10,10 +10,11 @@ from ..plots.lc import plot_synthetic_samples
 
 ###################################################################################################################################################
 
-GEN_CDICT = {
-	'curve_fit':SynSNeGeneratorCF,
-	'mcmc':SynSNeGeneratorMCMC,
-}
+def get_syn_sne_generator(method_name):
+	if method_name=='curve_fit':
+		return SynSNeGeneratorCF,
+	elif method_name=='mcmc':
+		return SynSNeGeneratorMCMC
 
 def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_sampler_bdict,
 	method='curve_fit',
@@ -41,7 +42,7 @@ def generate_synthetic_dataset(lcdataset, set_name, obse_sampler_bdict, length_s
 				if lcobj_name in ignored_lcobj_names:
 					continue
 				lcobj = lcset[lcobj_name]
-				sne_generator = GEN_CDICT[method](lcobj, class_names, band_names, obse_sampler_bdict, length_sampler_bdict)
+				sne_generator = get_syn_sne_generator(method)(lcobj, class_names, band_names, obse_sampler_bdict, length_sampler_bdict)
 				new_lcobjs, new_lcobjs_pm, fit_errors_bdict = sne_generator.sample_curves(synthetic_samples_per_curve)
 				fit_errors_bdict_list.append(fit_errors_bdict)
 				save_filedir = None if save_rootdir is None else f'{save_rootdir}/{lcset.survey}/{method}/{lcobj_name}.ferror'
