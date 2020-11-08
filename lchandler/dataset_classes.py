@@ -92,8 +92,6 @@ class LCDataset():
 
 		return
 
-	### sigma clipping
-
 	def sigma_clipping(self, lcset_name, new_lcset_name,
 		sigma_n:int=1,
 		sigma_m:float=3.,

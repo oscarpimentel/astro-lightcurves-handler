@@ -21,25 +21,38 @@ def delete_invalid_detections(df, index_name,
 	uses_corr:True,
 	npartitions=C_.N_DASK,
 	):
-	obs_index = 'magpsf_corr' if uses_corr else 'magpsf'
-	obse_index = 'sigmapsf_corr' if uses_corr else 'sigmapsf'
+	days_col = 'mjd'
+	obs_col = 'magpsf_corr' if uses_corr else 'magpsf'
+	obse_col = 'sigmapsf_corr' if uses_corr else 'sigmapsf'
 	ddf = dd.from_pandas(df, npartitions=npartitions)
 	if uses_corr:
 		df = ddf[~(
 			(ddf['isdiffpos']==-1) |
-			(ddf[obs_index].isna()) | # delete nans
-			(ddf[obse_index].isna()) | # delete nans
-			(ddf[obse_index]>=100)
+			(ddf[days_col].isna()) | # delete nans
+			(ddf[obs_col].isna()) | # delete nans
+			(ddf[obse_col].isna()) | # delete nans
+			(ddf[obse_col]>=100)
 		)].compute() # FAST
 	else:
 		df = ddf[~(
 			(ddf['isdiffpos']==-1) |
-			(ddf[obs_index].isna()) | # delete nans
-			(ddf[obse_index].isna()) # delete nans
+			(ddf[days_col].isna()) | # delete nans
+			(ddf[obs_col].isna()) | # delete nans
+			(ddf[obse_col].isna()) # delete nans
 		)].compute() # FAST
 	return df
 
-def filter_by_valid_objs(df, valid_objs):
+def delete_invalid_objs(df, new_index_name,
+	npartitions=C_.N_DASK,
+	):
+	df = df.set_index([new_index_name])
+	ddf = dd.from_pandas(df, npartitions=npartitions)
+	invalid_df = ddf[(ddf['isdiffpos']==-1)].compute() # FAST
+	invalid_objs = list(set(invalid_df.index))
+	df = df.drop(invalid_objs)
+	return df.reset_index()
+
+def keep_only_valid_objs(df, valid_objs):
 	return df[df.index.isin(valid_objs)]
 
 def drop_duplicates_mjd(df, new_index_name,
@@ -65,6 +78,7 @@ def process_df_detections(df, index_name, new_index_name, detections_cols,
 	df = df.reset_index()
 	df = drop_duplicates_mjd(df, new_index_name)
 	df = delete_invalid_detections(df, new_index_name, uses_corr, npartitions)
+	#df = delete_invalid_objs(df, new_index_name)
 	df = subset_df_columns(df, detections_cols+[new_index_name]) # sub sample columns
 	df = df.set_index([new_index_name])
 	objs = list(set(df.index))
@@ -73,6 +87,5 @@ def process_df_detections(df, index_name, new_index_name, detections_cols,
 def process_df_labels(df, new_index_name, det_objs):
 	df = drop_duplicates(df)
 	df = df.set_index([new_index_name])
-	df = filter_by_valid_objs(df, det_objs) # clean labels dataframe
 	objs = list(set(df.index))
 	return df, objs

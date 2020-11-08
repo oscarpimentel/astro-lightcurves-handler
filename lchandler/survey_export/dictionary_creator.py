@@ -6,6 +6,7 @@ import numpy as np
 import flamingchoripan.cuteplots.plots as cplots
 from dask import dataframe as dd
 from flamingchoripan.progress_bars import ProgressBar
+from flamingchoripan.level_bars import LevelBar
 import matplotlib.pyplot as plt
 from flamingchoripan.files import save_pickle, load_pickle
 import flamingchoripan.cuteplots.colors as cc
@@ -20,56 +21,64 @@ import copy
 
 class LightCurveDictionaryCreator():
 	def __init__(self, survey_name:str, detections_df:pd.DataFrame, labels_df:pd.DataFrame, band_dictionary:dict, df_index_names:dict,
-		obs_is_flux:bool=True,
+		dataframe_obs_uses_flux:bool=True,
 		label_to_class_dict:dict=None,
 		zero_point:float=C_.DEFAULT_ZP,
 		flux_scale:float=C_.DEFAULT_FLUX_SCALE,
-		maximum_samples_per_class:int=None,
 		):
 		'''
-		zero_point: used if obs_is_flux is False
-		flux_scale: used if obs_is_flux is False
+		zero_point: used if dataframe_obs_uses_flux is False, to transform to flux
+		flux_scale: used if dataframe_obs_uses_flux is False, to transform to flux
 		-> flux
 		'''
 		self.survey_name = survey_name
-		self.detections_df = detections_df
-		self.labels_df_original = labels_df.copy()
-		self.band_dictionary = band_dictionary
-		self.df_index_names = df_index_names
+		self.detections_df = detections_df # dont copy, too much memory
+		self.raw_labels_df = labels_df.copy()
+		self.labels_df = labels_df.copy()
+		self.band_dictionary = band_dictionary.copy()
+		self.df_index_names = df_index_names.copy()
 
-		self.obs_is_flux = obs_is_flux
-		self.label_to_class_dict_original = (self.generate_label_to_class_dict() if label_to_class_dict is None else label_to_class_dict.copy())
+		self.dataframe_obs_uses_flux = dataframe_obs_uses_flux
+		self.label_to_class_dict_original = self.generate_label_to_class_dict() if label_to_class_dict is None else label_to_class_dict.copy()
 		self.class_to_label_dict_original = self.generate_class_to_label_dict(self.label_to_class_dict_original)
 		self.zero_point = zero_point
 		self.flux_scale = flux_scale
-		self.maximum_samples_per_class = maximum_samples_per_class
 		self.refresh_dataframe()
 
+	def __repr__(self):
+		labels_names, counts = np.unique(self.raw_labels_df[self.df_index_names['label']].values, return_counts=True)
+		txt = LevelBar({l:c for l,c in zip(labels_names, counts)}, ncols=70).__repr__()
+		return txt
+
 	def generate_label_to_class_dict(self):
-		labels_names, counts = np.unique(self.labels_df_original[self.df_index_names['label']].values, return_counts=True)
+		labels_names = list(set(self.raw_labels_df[self.df_index_names['label']].values))
 		label_to_class_dict = {k:k for k in labels_names}
-		print(f'label_to_class_dict: {label_to_class_dict}')
+		#print(f'label_to_class_dict: {label_to_class_dict}')
 		return label_to_class_dict
 
 	def generate_class_to_label_dict(self, label_to_class_dict):
 		class_to_label_dict = {label_to_class_dict[k]:k for k in label_to_class_dict.keys()}
-		print('label_to_class_dict:', '\n\t'+'\n\t'.join([f'{k}: {label_to_class_dict[k]}' for k in label_to_class_dict.keys()]))
-		print('class_to_label_dict:', '\n\t'+'\n\t'.join([f'{k}: {class_to_label_dict[k]}' for k in class_to_label_dict.keys()]))
+		#print('label_to_class_dict:', '\n\t'+'\n\t'.join([f'{k}: {label_to_class_dict[k]}' for k in label_to_class_dict.keys()]))
+		#print('class_to_label_dict:', '\n\t'+'\n\t'.join([f'{k}: {class_to_label_dict[k]}' for k in class_to_label_dict.keys()]))
 		return class_to_label_dict
 
 	def get_classes_from_df(self):
 		labels_names, counts = np.unique(self.labels_df[self.df_index_names['label']].values, return_counts=True)
-		print(f'labels_names: {labels_names} - counts: {counts}')
-		classes_names = [self.label_to_class_dict.get(label, label) for label in labels_names]
-		return classes_names, labels_names, len(classes_names)
+		#print(f'labels_names: {labels_names} - counts: {counts}')
+		class_names = [self.label_to_class_dict.get(label, label) for label in labels_names]
+		return class_names, labels_names, len(class_names)
 
 	def refresh_dataframe(self):
-		self.update_labels_df([], [], {})
+		self.update_labels_df()
 
-	def update_labels_df(self, invalid_classes:list, query_classes:list, to_merge_classes_dict:dict):
+	def update_labels_df(self,
+		invalid_classes:list=[],
+		query_classes:list=[],
+		merge_classes_dict:dict={},
+		):
 		self.label_to_class_dict = self.label_to_class_dict_original.copy() # create
 		self.class_to_label_dict = self.class_to_label_dict_original.copy() # create
-		self.labels_df = self.labels_df_original.copy() # create
+		self.labels_df = self.raw_labels_df.copy() # create
 		
 		### remove invalid labels/classes
 		invalid_labels = [self.class_to_label_dict[k] for k in invalid_classes]
@@ -81,26 +90,18 @@ class LightCurveDictionaryCreator():
 			self.labels_df = self.labels_df[self.labels_df[self.df_index_names['label']].isin(query_labels)]
 
 		### merge classes given the dict
-		for to_merge_classes_key in to_merge_classes_dict.keys():
+		for to_merge_classes_key in merge_classes_dict.keys():
 			self.label_to_class_dict.update({to_merge_classes_key:to_merge_classes_key})
 			self.class_to_label_dict.update({to_merge_classes_key:to_merge_classes_key})
-			print(f'to_merge_classes_key: {to_merge_classes_key}')
-			class_fusion_list = to_merge_classes_dict[to_merge_classes_key]
+			#print(f'to_merge_classes_key: {to_merge_classes_key}')
+			class_fusion_list = merge_classes_dict[to_merge_classes_key]
 			labels_fusion_list = [self.class_to_label_dict[k] for k in class_fusion_list]
 			for label_fusion in labels_fusion_list:
 				self.labels_df.loc[self.labels_df[self.df_index_names['label']]==label_fusion, self.df_index_names['label']] = to_merge_classes_key
 		
 		### classes
-		self.classes_names, self.labels_names, self.total_classes = self.get_classes_from_df()
-
-		### crop
-		if not self.maximum_samples_per_class is None:
-			print(f'cropping dataset to maximum_samples_per_class: {self.maximum_samples_per_class:,} samples')
-			for class_name in self.classes_names:
-				to_drop_indexs = self.labels_df[self.labels_df[self.index_names['label']]==self.class_to_label_dict[class_name]].index
-				max_samples = max(0, len(to_drop_indexs) - self.maximum_samples_per_class)
-				print(f'to_drop_indexs: {len(to_drop_indexs):,} - max_samples: {max_samples:,}')
-				self.labels_df = self.labels_df.drop(to_drop_indexs[:max_samples])
+		self.class_names, self.labels_names, self.total_classes = self.get_classes_from_df()
+		return
 
 	def plot_class_distribution(self,
 		figsize=None,
@@ -137,7 +138,7 @@ class LightCurveDictionaryCreator():
 		}
 		if not figsize is None:
 			plt_kwargs['figsize'] = figsize 
-		fig, ax = cplots.plot_hist_labels(to_plot, self.classes_names, **plt_kwargs)
+		fig, ax = cplots.plot_hist_labels(to_plot, self.class_names, **plt_kwargs)
 		fig.tight_layout()
 		plt.show()
 
@@ -162,10 +163,26 @@ class LightCurveDictionaryCreator():
 		except:
 			return None, None
 
+	def get_band(self, curve):
+		indexs = np.argsort(curve[:,C_.DAYS_INDEX]) # need to be sorted
+		curve = curve[indexs]
+
+		if self.dataframe_obs_uses_flux:
+			return curve
+		else:
+			mag = curve[:,C_.OBS_INDEX]
+			mag_error = curve[:,C_.OBS_ERROR_INDEX]
+			flux = get_flux_from_magnitude(mag, self.zero_point, self.flux_scale)
+			flux_error = get_flux_error_from_magnitude(mag, mag_error, self.zero_point, self.flux_scale)
+			curve[:,C_.OBS_INDEX] = flux
+			curve[:,C_.OBS_ERROR_INDEX] = flux_error
+			return curve
+
 	def export_dictionary(self, description:str, save_folder:str,
 		band_names:list=None,
 		filename_extra_parameters:dict={},
 		npartitions:int=C_.N_DASK,
+		any_band_points=C_.MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT,
 		):
 		class_dfkey = self.df_index_names['label']
 		band_dfkey = self.df_index_names['band']
@@ -174,24 +191,22 @@ class LightCurveDictionaryCreator():
 		band_names = list(self.band_dictionary.keys()) if band_names is None else band_names
 		print(f'band_names: {band_names}')
 
-		### clean dataframe
+		### clean dataframe to speed up thing in the objects search
 		detections_df = self.detections_df.reset_index()
-
-		print(f'cleaning the DataFrame... - original samples: {len(detections_df):,}')
+		print(f'cleaning the DataFrame - samples: {len(detections_df):,}')
 		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
 
 		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
 		detections_df = detections_ddf.loc[detections_ddf[self.df_index_names['band']].isin([self.band_dictionary[b] for b in band_names])].compute()
-		print(f'remove_invalid_bands - samples: {len(detections_df):,}')
+		print(f'remove_invalid_bands > samples: {len(detections_df):,}')
 
 		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
 		detections_df = detections_ddf.loc[detections_ddf[self.df_index_names['oid']].isin(list(set(self.labels_df.index)))].compute()
-		print(f'remove_invalid_classes - samples: {len(detections_df):,}')
+		print(f'remove_invalid_classes > samples: {len(detections_df):,}')
 
 		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
 		detections_df = detections_ddf.loc[detections_ddf[self.df_index_names['obs']]>0].compute()
-		print(f'remove_negative_obs - samples: {len(detections_df):,}')
-
+		print(f'remove_negative_obs > samples: {len(detections_df):,}')
 		detections_df = detections_df.set_index(self.df_index_names['oid'])
 
 		### prepare dataset
@@ -200,7 +215,7 @@ class LightCurveDictionaryCreator():
 			self.survey_name,
 			description,
 			band_names,
-			self.classes_names,
+			self.class_names,
 			True,
 		)
 		lcdataset = dsc.LCDataset()
@@ -212,11 +227,11 @@ class LightCurveDictionaryCreator():
 			'bands':''.join(band_names),
 		}
 		filename_parameters.update(filename_extra_parameters)
-		filedir = f'{save_folder}/{self.get_dict_name(filename_parameters)}.{C_.EXT_RAW_LIGHTCURVE}'
-		print(f'filedir: {filedir}')
+		save_filedir = f'{save_folder}/{self.get_dict_name(filename_parameters)}.{C_.EXT_RAW_LIGHTCURVE}'
+		print(f'save_filedir: {save_filedir}')
 
 		### easy dict
-		easy_label_dict = {self.class_to_label_dict[c]:kc for kc,c in enumerate(self.classes_names)}
+		easy_label_dict = {self.class_to_label_dict[c]:kc for kc,c in enumerate(self.class_names)}
 		print(f'easy_label_dict: {easy_label_dict}')
 
 		# start loop
@@ -243,14 +258,14 @@ class LightCurveDictionaryCreator():
 				lcobj.set_y(y)
 
 				lengths_bdict = {b:len(lcobj.get_b(b)) for b in band_names}
-				if any([lengths_bdict[b]>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in band_names]):
+				if any([lengths_bdict[b]>=any_band_points for b in band_names]):
 					ra, dec = self.get_radec(self.labels_df, lcobj_name)
 					lcobj.ra = ra
 					lcobj.dec = dec
 					lcdataset['raw'].set_lcobj(lcobj_name, lcobj)
 					correct_samples += 1
 				
-				bar(f'obj: {lcobj_name} - y: {y} - lengths_bdict: {lengths_bdict} - correct_samples: {correct_samples:,}')
+				bar(f'obj: {lcobj_name} - y: {y} - c: {self.class_names[y]} - lengths_bdict: {lengths_bdict} - correct_samples (any-band>={any_band_points}): {correct_samples:,}')
 					
 			except KeyboardInterrupt:
 				bar.done()
@@ -258,21 +273,5 @@ class LightCurveDictionaryCreator():
 				break
 
 		bar.done()
-		print(f'last dictionary save! filedir: {filedir}')
-		save_pickle(filedir, lcdataset)
+		save_pickle(save_filedir, lcdataset)
 		return lcdataset
-
-	def get_band(self, curve):
-		indexs = np.argsort(curve[:,C_.DAYS_INDEX]) # sorted
-		curve = curve[indexs]
-
-		if self.obs_is_flux:
-			return curve
-		else:
-			mag = curve[:,C_.OBS_INDEX]
-			mag_error = curve[:,C_.OBS_ERROR_INDEX]
-			flux = get_flux_from_magnitude(mag, self.zero_point, self.flux_scale)
-			flux_error = get_flux_error_from_magnitude(mag, mag_error, self.zero_point, self.flux_scale)
-			curve[:,C_.OBS_INDEX] = flux
-			curve[:,C_.OBS_ERROR_INDEX] = flux_error
-			return curve
