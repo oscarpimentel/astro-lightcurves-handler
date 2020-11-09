@@ -1,7 +1,7 @@
 import numpy as np
 
-###################################################################################################################################################
-EPS = 1e-12
+### PLOTS
+OBSE_STD_SCALE = 1
 
 ### EXPORT
 N_DASK = 4
@@ -9,21 +9,12 @@ N_DASK = 4
 ### LENGTHS
 MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT = 5
 MIN_POINTS_LIGHTCURVE_DEFINITION = 2
-MIN_POINTS_LIGHTCURVE_TO_PMFIT = 3
-MIN_POINTS_LIGHTCURVE_DEFINITION_FATS = 4
 
 ### FILE TYPES
-EXT_RAW_LIGHTCURVE = 'rawlcd' # no split, as RAW ZTF/FSNes
-EXT_SPLIT_LIGHTCURVE = 'slcd' # with proper train/vali split, vali is balanced in classes
-EXT_PARAMETRIC_LIGHTCURVE = 'plcd' # with sigma clipping and fitted parametric model
-EXT_FATS_LIGHTCURVE = 'flcd' # with sigma clipping and FATS
-
-### SYNTHETIC
-OBSE_STD_SCALE = 1
-CPDS_P = 0.015 # curve points down sampling probability
-HOURS_NOISE_AMP = 16
-MIN_CADENCE_DAYS = 3
-MAX_OBS_ERROR = 1e10
+EXT_RAW_LIGHTCURVE = 'ralcds' # no split, as raw light-curve-data-set
+EXT_SPLIT_LIGHTCURVE = 'splcds' # with proper train/val/test split light-curve-data-set
+EXT_PARAMETRIC_LIGHTCURVE = 'sylcds' # with synthetic curves
+EXT_FATS_LIGHTCURVE = 'falcds' # with FATS
 
 ### LC GENERAL
 DEFAULT_ZP = 48.6

@@ -40,6 +40,7 @@ class SubLCO():
 		):
 		self.set_values(days, obs, obs_errors)
 		self.y = y
+		self.synthetic = False
 
 	def set_values(self, days:np.ndarray, obs:np.ndarray, obs_errors:np.ndarray):
 		'''
