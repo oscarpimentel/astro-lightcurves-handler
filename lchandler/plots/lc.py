@@ -28,6 +28,10 @@ def plot_lightcurve(ax, lcobj, b,
 	std_factor:int=C_.OBSE_STD_SCALE, # asuming error as gaussian error
 	percentile_bar:float=0.90, # show bars as percentile bound
 	):
+	'''
+	plot a light curve!!
+	bar errors asume that observation error is the scale of a gaussian distribution
+	'''
 	lcobjb = lcobj.get_b(b)
 	is_synthetic = lcobjb.synthetic
 	new_days = lcobjb.days
