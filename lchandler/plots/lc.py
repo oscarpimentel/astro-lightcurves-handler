@@ -20,7 +20,7 @@ def plot_lightcurve(ax, lcobj, b,
 	max_day:float=np.infty,
 
 	label:str=None,
-	alpha:float=0.25,
+	alpha:float=1,
 	mode:str='bar', # shadow, bar, gauss
 	capsize:int=0,
 	x_margin_offset_percent:float=1,
@@ -39,16 +39,16 @@ def plot_lightcurve(ax, lcobj, b,
 	bar = stats.norm(loc=0, scale=std_factor*obse).ppf(percentile_bar)
 	color = C_.COLOR_DICT[b]
 	if mode=='shadow':
-		ax.fill_between(new_days, obs-bar, obs+bar, facecolor=color, alpha=alpha)
+		ax.fill_between(new_days, obs-bar, obs+bar, facecolor=color, alpha=0.25)
 	elif mode=='bar':
 		ax.errorbar(new_days, obs, yerr=bar, color=color, capsize=capsize, elinewidth=1, linewidth=0)
 	else:
 		raise Exception(f'not supported mode: {mode}')
 	
-	ax.plot(new_days, obs, '--', color=color, alpha=alpha)
+	ax.plot(new_days, obs, '--', color=color, alpha=0.25)
 	if is_synthetic and not label is None:
 		label = label+' (synth)'
-	ax.plot(new_days, obs, 'o', color=color, label=label, markeredgecolor='k' if is_synthetic else None)
+	ax.plot(new_days, obs, 'o', color=color, label=label, alpha=alpha, markeredgecolor='k' if is_synthetic else None)
 
 	x_margins = get_margin(new_days, x_margin_offset_percent)
 	y_margins = get_margin(obs, y_margin_offset_percent)
