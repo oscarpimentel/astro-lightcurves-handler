@@ -252,6 +252,11 @@ class SubLCO():
 				setattr(new_sublco, key, v.copy())
 		return new_sublco
 
+	def synthetic_copy(self):
+		new_obj = self.copy()
+		new_obj.synthetic = True
+		return new_obj
+
 	def __len__(self):
 		return len(self.days)
 
@@ -293,6 +298,17 @@ class LCO():
 	def add_sublcobj_b(self, b:str, sublcobj):
 		setattr(self, b, sublcobj)
 		self.bands.append(b)
+
+	def copy_only_data(self):
+		new_lco = LCO(
+			is_flux=self.is_flux,
+			y=self.y,
+			global_first_day=self.global_first_day,
+			ra=self.ra,
+			dec=self.dec,
+			z=self.z,
+		)
+		return new_lco
 
 	def copy(self):
 		new_lco = LCO(
@@ -436,3 +452,11 @@ class LCO():
 
 	def get_length_bdict(self):
 		return {b:self.get_length_b(b) for b in self.bands}
+
+	def any_synthetic(self):
+		return any([self.get_b(b).synthetic for b in self.bands])
+
+	def any_band_eqover_length(self,
+		th_length=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
+		):
+		return any([len(self.get_b(b))>=th_length for b in self.bands])

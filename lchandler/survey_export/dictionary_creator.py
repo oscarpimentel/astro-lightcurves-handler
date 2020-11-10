@@ -232,8 +232,7 @@ class LightCurveDictionaryCreator():
 				y = self.get_label(self.labels_df, lcobj_name, easy_label_dict)
 				lcobj.set_y(y)
 
-				lengths_bdict = {b:len(lcobj.get_b(b)) for b in band_names}
-				if any([lengths_bdict[b]>=any_band_points for b in band_names]):
+				if lcobj.any_band_eqover_length(any_band_points):
 					ra, dec = self.get_radec(self.labels_df, lcobj_name)
 					lcobj.ra = ra
 					lcobj.dec = dec
@@ -243,7 +242,7 @@ class LightCurveDictionaryCreator():
 					pass
 					#print(lcobj_name)
 				
-				bar(f'obj: {lcobj_name} - y: {y} - c: {self.class_names[y]} - lengths_bdict: {lengths_bdict} - correct_samples (any-band>={any_band_points}): {correct_samples:,}')
+				bar(f'obj: {lcobj_name} - y: {y} - c: {self.class_names[y]} - lengths_bdict: {lcobj.get_length_bdict()} - correct_samples (any-band>={any_band_points}): {correct_samples:,}')
 					
 			except KeyboardInterrupt:
 				bar.done()
