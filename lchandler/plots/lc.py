@@ -45,7 +45,7 @@ def plot_lightcurve(ax, lcobj, b,
 	if mode=='shadow':
 		ax.fill_between(new_days, obs-bar, obs+bar, facecolor=color, alpha=0.25)
 	elif mode=='bar':
-		ax.errorbar(new_days, obs, yerr=bar, color=color, capsize=capsize, elinewidth=1, linewidth=0)
+		ax.errorbar(new_days, obs, yerr=bar, color=color, capsize=capsize, elinewidth=1, linewidth=0, alpha=alpha)
 	else:
 		raise Exception(f'not supported mode: {mode}')
 	
