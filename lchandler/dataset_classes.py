@@ -208,14 +208,20 @@ class LCSet():
 	def get_populations_cdict(self):
 		return get_populations_cdict(self.get_lcobj_classes(), self.class_names)
 
-	def get_class_weights(self):
+	def get_class_freq_weights_cdict(self):
 		pop_cdict = self.get_populations_cdict()
 		total_pop = sum([pop_cdict[c] for c in self.class_names])
-		return [pop_cdict[c]/total_pop for c in self.class_names]
+		return {c:total_pop/pop_cdict[c] for c in self.class_names}
 
-	def get_class_efective_weigths(self, beta):
+	def get_class_brfc_weights_cdict(self):
+		# used for BalancedRandomForestClassifier
+		pop_cdict = self.get_populations_cdict()
+		total_pop = sum([pop_cdict[c] for c in self.class_names])
+		return {c:total_pop/(len(self.class_names)*pop_cdict[c]) for c in self.class_names}
+
+	def get_class_efective_weigths_cdict(self, beta):
 		assert beta>0 and beta<1
-		return [(1-beta**pop_cdict[c])/(1-beta) for c in self.class_names] 
+		return {c:(1-beta**pop_cdict[c])/(1-beta) for c in self.class_names}
 
 	def __repr__b(self, b, lcobjs):
 		ddays = np.concatenate([diff_vector(lcobj.get_b(b).days, False) for lcobj in lcobjs])
