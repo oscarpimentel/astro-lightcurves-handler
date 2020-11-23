@@ -81,7 +81,7 @@ def process_df_detections(df, index_name, new_index_name, detections_cols,
 	df.index.rename(new_index_name, inplace=True) # rename index
 	df = df.reset_index()
 	df = drop_duplicates_mjd(df, new_index_name) # delete more samples
-	#df = drop_duplicates(df) # some samples can bypass this as there are different obs in same days
+	#df = drop_duplicates(df) # some samples can bypass this as there are different obs in same objs/days/bands
 	if clean_detections:
 		df = delete_invalid_detections(df, new_index_name, uses_corr, npartitions)
 		#df = delete_invalid_objs(df, new_index_name) # deletes a lot of objects

@@ -1,5 +1,7 @@
 import numpy as np
 
+EPS = 1e-10
+
 ### PLOTS
 OBSE_STD_SCALE = 1
 

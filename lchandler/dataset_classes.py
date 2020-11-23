@@ -68,7 +68,8 @@ class LCDataset():
 		random_state=42,
 		):
 		'''stratified'''
-		assert sum([new_lcsets[k] for k in new_lcsets.keys()])==1.
+		sum_ = sum([new_lcsets[k] for k in new_lcsets.keys()])
+		assert abs(1-sum_)<=C_.EPS
 		assert len(new_lcsets.keys())>=2
 
 		to_split_lcset = self[to_split_lcset_name]
