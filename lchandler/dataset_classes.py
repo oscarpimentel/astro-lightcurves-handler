@@ -5,11 +5,12 @@ from . import C_
 import numpy as np
 import random
 import copy
-from flamingchoripan.datascience.statistics import get_sigma_clipping_indexing, get_populations_cdict
+import flamingchoripan.datascience.statistics as fstats
 from flamingchoripan.prints import HiddenPrints, ShowPrints
 from flamingchoripan.strings import get_bar
 from flamingchoripan.level_bars import LevelBar
 from .lc_classes import diff_vector
+import pandas as pd
 
 ###################################################################################################################################################
 
@@ -124,6 +125,26 @@ class LCDataset():
 			print(f'sigma_samples: {sigma_samples:,} - total_deleted_points: {total_deleted_points}')
 		return total_deleted_points
 
+	def get_serial_stats_idf(self,
+		lcset_names=None,
+		):
+		dfs = []
+		lcset_names = self.get_lcset_names() if lcset_names is None else lcset_names
+		for lcset_name in lcset_names:
+			df = self[lcset_name].get_serial_stats_idf(lcset_name)
+			dfs.append(df)
+		return pd.concat(dfs)
+
+	def get_bstats_idf(self, b,
+		lcset_names=None,
+		):
+		dfs = []
+		lcset_names = self.get_lcset_names() if lcset_names is None else lcset_names
+		for lcset_name in lcset_names:
+			df = self[lcset_name].get_bstats_idf(b, lcset_name)
+			dfs.append(df)
+		return pd.concat(dfs)
+
 ###################################################################################################################################################
 
 class LCSet():
@@ -145,11 +166,15 @@ class LCSet():
 	def __getitem__(self, lcobj_name):
 		return self.data[lcobj_name]
 
-	def get_lcobj_names(self):
-		return list(self.data.keys())
+	def get_lcobj_names(self,
+		c=None,
+		):
+		return [k for k in self.data.keys() if self.class_names[self.data[k].y]==c or c is None]
 
-	def get_lcobjs(self):
-		return [self[lcobj_name] for lcobj_name in self.get_lcobj_names()]
+	def get_lcobjs(self,
+		c=None,
+		):
+		return [self[lcobj_name] for lcobj_name in self.get_lcobj_names(c)]
 
 	def clean_empty_obs_keys(self,
 		verbose:int=1,
@@ -224,31 +249,94 @@ class LCSet():
 		assert beta>0 and beta<1
 		return {c:(1-beta**pop_cdict[c])/(1-beta) for c in self.class_names}
 
-	def __repr__b(self, b, lcobjs):
-		ddays = np.concatenate([diff_vector(lcobj.get_b(b).days, False) for lcobj in lcobjs])
-		median_cadence = np.percentile(ddays, 50)
-		durations = [lcobj.get_b(b).get_days_duration() for lcobj in lcobjs]
-		durations = [d for d in durations if not d is None]
-		median_duration = np.percentile(durations, 50)
-		lengths = [len(lcobj.get_b(b)) for lcobj in lcobjs]
-		txt = ''
-		txt += f'({b}) obs_samples: {sum(lengths):,} - min_len: {min(lengths)} - max_dur: {max(durations):.1f}[days] - p50_dur: {median_duration:.1f}[days] - p50_cadence: {median_cadence:.1f}[days]\n'
+	def get_mean_length_df_bdict(self,
+		index=None,
+		):
+		df_bdict = {}
+		for kb,b in enumerate(self.band_names):
+			info_dict = {}
+			for kc,c in enumerate(self.class_names):
+				lcobjs = self.get_lcobjs(c)
+				info_dict[f'{c}{b}-$N_c$'] = sum([len(lcobj.get_b(b)) for lcobj in lcobjs])/len(lcobjs)
+			df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
+			df.index.rename(C_.SET_NAME_STR, inplace=True)
+			df_bdict[b] = df
+
+		return df_bdict
+
+	def get_class_stats_idf(self,
+		index=None,
+		):
+		info_dict = {}
+		for kc,c in enumerate(self.class_names):
+			lcobjs = self.get_lcobjs(c)
+			info_dict[f'{c}-$N_c$'] = len(lcobjs)
+		df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
+		df.index.rename(C_.SET_NAME_STR, inplace=True)
+		return df, self.get_mean_length_df_bdict()
+
+	def get_serial_stats_idf(self,
+		index=None,
+		):
+		info_dict = {}
+		for kc,c in enumerate(self.class_names):
+			lcobjs = self.get_lcobjs(c)
+			xs = [lcobj.get_x_serial() for lcobj in lcobjs]
+			info_dict[f'{c}-$x$'] = XError(np.concatenate([x[:,C_.OBS_INDEX] for x in xs]))
+			info_dict[f'{c}-$L$'] = XError([len(lcobj) for lcobj in lcobjs])
+			info_dict[f'{c}-$\Delta T$'] = XError([lcobj.get_days_serial_duration() for lcobj in lcobjs])
+			info_dict[f'{c}-$\Delta t$'] = XError(np.concatenate([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs]))
+		df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
+		df.index.rename(C_.SET_NAME_STR, inplace=True)
+		return df
+
+	def get_bstats_idf_c(self, c, b,
+		index=None,
+		):
+		info_dict = {}
+		lcobjs = self.get_lcobjs(c)
+		info_dict[f'{c}-$x$'] = XError(np.concatenate([x.get_b(b).obs for x in lcobjs]))
+		info_dict[f'{c}-$L$'] = XError([len(x.get_b(b)) for x in lcobjs])
+		info_dict[f'{c}-$\Delta T$'] = XError([x.get_b(b).get_days_duration() for x in lcobjs if len(x.get_b(b))>=1])
+		info_dict[f'{c}-$\Delta t$'] = XError(np.concatenate([x.get_b(b).get_diff('days') for x in lcobjs]))
+		df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
+		df.index.rename(C_.SET_NAME_STR, inplace=True)
+		return df
+
+	def get_bstats_idf(self, b,
+		index=None,
+		):
+		dfs = []
+		for kc,c in enumerate(self.class_names):
+			df = self.get_bstats_idf_c(c, b, index)
+			dfs.append(df)
+		df = pd.concat(dfs, axis=1)
+		return df
+
+	### repr
+	def __repr__b(self, b):
+		df = self.get_bstats_idf(b)
+		lengths = sum([df[f'{c}-$L$'].values[0] for c in self.class_names])
+		durations = sum([df[f'{c}-$\Delta T$'].values[0] for c in self.class_names])
+		cadences = sum([df[f'{c}-$\Delta t$'].values[0] for c in self.class_names])
+		txt = f'({b}) obs_samples: {lengths.sum():,} - min_len: {lengths.min()} - max_dur: {durations.max():.1f}[days] - dur(p50): {durations.p50:.1f}[days] - cadence(p50): {cadences.p50:.1f}[days]\n'
+		return txt
+
+	def __repr_serial(self):
+		df = self.get_serial_stats_idf()
+		lengths = sum([df[f'{c}-$L$'].values[0] for c in self.class_names])
+		durations = sum([df[f'{c}-$\Delta T$'].values[0] for c in self.class_names])
+		cadences = sum([df[f'{c}-$\Delta t$'].values[0] for c in self.class_names])
+		txt = f'(*) obs_samples: {lengths.sum():,} - min_len: {lengths.min()} - max_dur: {durations.max():.1f}[days] - dur(p50): {durations.p50:.1f}[days] - cadence(p50): {cadences.p50:.1f}[days]\n'
 		return txt
 
 	def __repr__(self):
-		txt = ''
 		if len(self)>0:
-			lcobjs = self.get_lcobjs()
-			durations = [lcobj.get_days_serial_duration() for lcobj in lcobjs]
-			median_duration = np.percentile(durations, 50)
-			lengths = [len(lcobj) for lcobj in lcobjs]
-			txt += f'(*) obs_samples: {sum(lengths):,} - min_len: {min(lengths)} - max_dur: {max(durations):.1f}[days] - p50_dur: {median_duration:.1f}[days]\n'
-
+			txt = self.__repr_serial()
 			for b in self.band_names:
-				txt += self.__repr__b(b, lcobjs)
-
+				txt += self.__repr__b(b)
 			populations_cdict = self.get_populations_cdict()
-			txt += LevelBar(populations_cdict, ' '*3).__repr__()
+			txt += str(LevelBar(populations_cdict, ' '*3))
 		else:
 			txt = 'empty lcset\n'
 		return txt[:-1]
@@ -286,27 +374,14 @@ class LCSet():
 		return new_set
 
 	def get_min_population(self):
-		pop_cdict = self.get_populations()
+		pop_cdict = self.get_populations_cdict()
 		min_index = np.argmin([pop_cdict[c] for c in self.class_names])
 		min_populated_class = self.class_names[min_index]
 		min_population = pop_cdict[min_populated_class]
-		obs_len_txt = ' - '.join([f'{b}: {obs_len_dict[b]:,}' for b in self.band_names])
-		max_duration = max([lcobj.get_days_serial_duration() for lcobj in self.get_lcobjs()])
 		return min_populated_class, min_population
 
-	def get_random_keys(self, nc):
-		'''stratified'''
-		d = {c:[] for c in self.class_names}
-		keys = random.sample(self.data.keys(), len(self.data.keys()))
-		index = 0
-		while any([len(d[c])<nc for c in self.class_names]):
-			key = keys[index]
-			obj = self.data[key]
-			c = self.class_names[obj.y]
-			if len(d[c])<nc:
-				d[c].append(key)
-			index +=1
-		return d
+	def get_random_stratified_keys(self, nc):
+		return fstats.get_random_stratified_keys(self.get_lcobj_names(), self.get_lcobj_classes(), self.class_names, nc)
 
 	def get_lcset_values_b(self, b:str, attr:str,
 		target_class:str=None,

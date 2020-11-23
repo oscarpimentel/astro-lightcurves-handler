@@ -18,6 +18,10 @@ EXT_SPLIT_LIGHTCURVE = 'splcds' # with proper train/val/test split light-curve-d
 EXT_PARAMETRIC_LIGHTCURVE = 'sylcds' # with synthetic curves
 EXT_FATS_LIGHTCURVE = 'falcds' # with FATS
 
+
+### DF
+SET_NAME_STR = 'dataset'
+
 ### LC GENERAL
 DEFAULT_ZP = 48.6
 DEFAULT_FLUX_SCALE = 1e26 # 1e0, 1e26
@@ -25,12 +29,12 @@ DEFAULT_MAG_SCALE = 1
 
 DAYS_INDEX = 0
 OBS_INDEX = 1
-OBS_ERROR_INDEX = 2
+OBSE_INDEX = 2
 
 INDEXS_DICT = {
 	'days':DAYS_INDEX,
 	'obs':OBS_INDEX,
-	'obse':OBS_ERROR_INDEX,
+	'obse':OBSE_INDEX,
 }
 SHORT_NAME_DICT = {
 	'days':'days',
@@ -52,8 +56,8 @@ LONG_NAME_DICT = {
 	'log_obs':'log-observations',
 	'd_obs':'$\\Delta$observations',
 
-	'obse':'observation errors',
-	'log_obse':'log-observation errors',
+	'obse':'observation-errors',
+	'log_obse':'log-observation-errors',
 	'd_obse':'$\\Delta$observation errors',
 }
 SYMBOLS_DICT = {
