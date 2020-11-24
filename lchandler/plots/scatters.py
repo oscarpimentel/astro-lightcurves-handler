@@ -4,49 +4,44 @@ from . import C_
 
 import numpy as np
 import matplotlib.pyplot as plt
-from flamingchoripan.cuteplots import colors as cc
 
 ###################################################################################################################################################
 
-def plot_obs_obse_scatter(lcdataset, set_names,
-	n=None,
+def plot_obs_obse_scatter(lcdataset, set_name1, set_name2,
 	figsize:tuple=(12,8),
-	alpha=0.7,
-	markersize=1.2,
+	alpha=0.2,
+	markersize=2,
+	n=2e3,
 	):
 	fig, axs = plt.subplots(1, 2, figsize=figsize)
-	band_names = lcdataset[set_names[0]].band_names
-	#cmap = cc.get_default_cmap(len(set_names))
-	cmap = cc.colorlist_to_cmap(['k']+cc.COLORS_DICT['cc_favs2'])
-	n = [None]*len(set_names) if n is None else n
+	lcset1 = lcdataset[set_name1]
+	lcset2 = lcdataset[set_name2]
+	band_names = lcset2.band_names
 	for kb,b in enumerate(band_names):
 		ax = axs[kb]
-		for k,set_name in enumerate(set_names):
-			lcset = lcdataset[set_name]
-			c = cmap.colors[k]
+		ax.plot(lcset1.get_lcset_values_b(b, 'obse'), lcset1.get_lcset_values_b(b, 'obs'), 'k.', markersize=markersize, alpha=alpha)
+		ax.plot(np.nan, np.nan, 'k.', alpha=1, label=f'original samples {set_name1}')
 
-			obse = lcset.get_lcset_values_b(b, 'obse')
-			obs = lcset.get_lcset_values_b(b, 'obs')
-			if not n[k] is None:
-				idxs = np.random.permutation(np.arange(0, len(obse)))[:int(n)]
-				obse = obse[idxs]
-				obs = obs[idxs]
-			label = '$p(x_{ij},\sigma_{xij})$'+f' {set_name} samples'
-			ax.plot(obse, obs, '.', c=c, markersize=markersize, alpha=alpha); ax.plot(np.nan, np.nan, '.', c=c, alpha=1, label=label)
+		obse = lcset2.get_lcset_values_b(b, 'obse')
+		obs = lcset2.get_lcset_values_b(b, 'obs')
+		idxs = np.random.permutation(np.arange(0, len(obse)))[:int(n)]
+		obse = obse[idxs]
+		obs = obs[idxs]
+		ax.plot(obse, obs, 'r.', markersize=markersize, alpha=alpha)
+		ax.plot(np.nan, np.nan, 'r.', alpha=1, label=f'original samples {set_name2}')
 
-			title = f'observations & observations-error joint distribution\n'
-			title += f'survey: {lcset.survey} - band: {b}'
-			ax.set_title(title)
-			ax.set_xlabel('obs-error')
-			ax.set_ylabel('obs' if kb==0 else None)
-			ax.legend()
-			#ax.set_xlim([0.0025, 0.02])
-			ax.set_ylim([0, 0.4])
+		title = f'survey:{lcset1.survey} - set: {set_name1}/{set_name2} - band: {b}'
+		ax.set_title(title)
+		ax.set_xlabel('obs error')
+		ax.set_ylabel('obs' if kb==0 else None)
+		ax.legend()
+		#ax.set_xlim([0.0025, 0.02])
+		ax.set_ylim([0, 0.4])
 
-			### multiband colors
-			#ax.grid(color=C_.COLOR_DICT[b])
-			[ax.spines[border].set_color(C_.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
-			[ax.spines[border].set_linewidth(2) for border in ['bottom', 'top', 'right', 'left']]
+		### multiband colors
+		#ax.grid(color=C_.COLOR_DICT[b])
+		[ax.spines[border].set_color(C_.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
+		[ax.spines[border].set_linewidth(2) for border in ['bottom', 'top', 'right', 'left']]
 
 	fig.tight_layout()
 	plt.show()

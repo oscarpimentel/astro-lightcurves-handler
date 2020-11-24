@@ -20,7 +20,7 @@ def search_over_sigma_samples(lcset, b:str, dist_mean, dist_sigma, sigma_m,
 	total_deleted_points = 0
 	for lcobj_name in lcset.get_lcobj_names():
 		sigmas = lcset[lcobj_name].get_b(b).obse # get
-		valid_indexs = get_sigma_clipping_indexing(sigmas, dist_mean, dist_sigma, sigma_m, apply_lower_bound)
+		valid_indexs = fstats.get_sigma_clipping_indexing(sigmas, dist_mean, dist_sigma, sigma_m, apply_lower_bound)
 		deleted_points = (~valid_indexs).astype(int).sum()
 		total_deleted_points += deleted_points
 		lcset.data[lcobj_name].get_b(b).apply_valid_indexs_to_attrs(valid_indexs) # set
@@ -232,7 +232,7 @@ class LCSet():
 		return [self.class_names[y] for y in self.get_lcobj_labels()]
 
 	def get_populations_cdict(self):
-		return get_populations_cdict(self.get_lcobj_classes(), self.class_names)
+		return fstats.get_populations_cdict(self.get_lcobj_classes(), self.class_names)
 
 	def get_class_freq_weights_cdict(self):
 		pop_cdict = self.get_populations_cdict()
@@ -282,10 +282,10 @@ class LCSet():
 		for kc,c in enumerate(self.class_names):
 			lcobjs = self.get_lcobjs(c)
 			xs = [lcobj.get_x_serial() for lcobj in lcobjs]
-			info_dict[f'{c}-$x$'] = XError(np.concatenate([x[:,C_.OBS_INDEX] for x in xs]))
-			info_dict[f'{c}-$L$'] = XError([len(lcobj) for lcobj in lcobjs])
-			info_dict[f'{c}-$\Delta T$'] = XError([lcobj.get_days_serial_duration() for lcobj in lcobjs])
-			info_dict[f'{c}-$\Delta t$'] = XError(np.concatenate([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs]))
+			info_dict[f'{c}-$x$'] = fstats.XError(np.concatenate([x[:,C_.OBS_INDEX] for x in xs]))
+			info_dict[f'{c}-$L$'] = fstats.XError([len(lcobj) for lcobj in lcobjs])
+			info_dict[f'{c}-$\Delta T$'] = fstats.XError([lcobj.get_days_serial_duration() for lcobj in lcobjs])
+			info_dict[f'{c}-$\Delta t$'] = fstats.XError(np.concatenate([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs]))
 		df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
 		df.index.rename(C_.SET_NAME_STR, inplace=True)
 		return df
@@ -295,10 +295,10 @@ class LCSet():
 		):
 		info_dict = {}
 		lcobjs = self.get_lcobjs(c)
-		info_dict[f'{c}-$x$'] = XError(np.concatenate([x.get_b(b).obs for x in lcobjs]))
-		info_dict[f'{c}-$L$'] = XError([len(x.get_b(b)) for x in lcobjs])
-		info_dict[f'{c}-$\Delta T$'] = XError([x.get_b(b).get_days_duration() for x in lcobjs if len(x.get_b(b))>=1])
-		info_dict[f'{c}-$\Delta t$'] = XError(np.concatenate([x.get_b(b).get_diff('days') for x in lcobjs]))
+		info_dict[f'{c}-$x$'] = fstats.XError(np.concatenate([x.get_b(b).obs for x in lcobjs]))
+		info_dict[f'{c}-$L$'] = fstats.XError([len(x.get_b(b)) for x in lcobjs])
+		info_dict[f'{c}-$\Delta T$'] = fstats.XError([x.get_b(b).get_days_duration() for x in lcobjs if len(x.get_b(b))>=1])
+		info_dict[f'{c}-$\Delta t$'] = fstats.XError(np.concatenate([x.get_b(b).get_diff('days') for x in lcobjs]))
 		df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
 		df.index.rename(C_.SET_NAME_STR, inplace=True)
 		return df
