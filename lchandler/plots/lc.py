@@ -49,7 +49,7 @@ def plot_lightcurve(ax, lcobj, b,
 	else:
 		raise Exception(f'not supported mode: {mode}')
 	
-	ax.plot(new_days, obs, '--', color=color, alpha=0.25)
+	ax.plot(new_days, obs, ':', color=color, alpha=0.25*alpha)
 	if is_synthetic and not label is None:
 		label = label+' (synth)'
 	ax.plot(new_days, obs, 'o', color=color, label=label, alpha=alpha, markeredgecolor='k' if is_synthetic else None)
