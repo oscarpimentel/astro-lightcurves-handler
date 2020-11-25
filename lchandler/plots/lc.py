@@ -25,8 +25,8 @@ def plot_lightcurve(ax, lcobj, b,
 	capsize:int=0,
 	x_margin_offset_percent:float=1,
 	y_margin_offset_percent:float=10,
-	std_factor:int=C_.OBSE_STD_SCALE, # asuming error as gaussian error
-	percentile_bar:float=0.90, # show bars as percentile bound
+	std_factor:int=C_.PLOT_OBSE_STD_SCALE, # asuming error as gaussian error
+	percentile_bar:float=C_.PLOT_PERCENTILE_BAR, # show bars as percentile bound
 	):
 	'''
 	plot a light curve!!

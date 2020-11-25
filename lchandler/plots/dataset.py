@@ -11,9 +11,9 @@ import pandas as pd
 ###################################################################################################################################################
 
 def plot_class_distribution(lcdataset, lcset_names,
-	figsize=(6,5),
+	figsize=None,
+	uses_log_scale=1,
 	):
-	fig, ax = plt.subplots(1, 1, figsize=figsize)
 	#for ks,lcset_name in enumerate([lcset_name1, lcset_name2]):
 	#ax = axs[ks]
 	lcset = lcdataset[lcset_names[0]]
@@ -22,12 +22,11 @@ def plot_class_distribution(lcdataset, lcset_names,
 	title = 'class population distribution\n'
 	#title += f'survey: {lcset.survey} - set: {lcset_name} - N: {len(lcobj_classes):,}'
 	plt_kwargs = {
-		'fig':fig,
-		'ax':ax,
 		#'ylabel':'' if ks>0 else None,
 		'title':title,
 		#'cmap':cc.colorlist_to_cmap([cc.NICE_COLORS_DICT['nice_gray']]),
-		'uses_log_scale':0,
+		'uses_log_scale':uses_log_scale,
+		'figsize':figsize,
 	}
 	fig, ax = cplots.plot_hist_labels(pop_dict, lcset.class_names, **plt_kwargs)
 		

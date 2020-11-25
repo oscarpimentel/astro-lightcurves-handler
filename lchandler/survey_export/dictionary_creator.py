@@ -147,17 +147,17 @@ class LightCurveDictionaryCreator():
 			return curve
 		else:
 			mag = curve[:,C_.OBS_INDEX]
-			mag_error = curve[:,C_.OBS_ERROR_INDEX]
+			mag_error = curve[:,C_.OBSE_INDEX]
 			flux = get_flux_from_magnitude(mag, self.zero_point, self.flux_scale)
 			flux_error = get_flux_error_from_magnitude(mag, mag_error, self.zero_point, self.flux_scale)
 			curve[:,C_.OBS_INDEX] = flux
-			curve[:,C_.OBS_ERROR_INDEX] = flux_error
+			curve[:,C_.OBSE_INDEX] = flux_error
 			return curve
 
 	def export_dictionary(self, description:str, save_folder:str,
 		band_names:list=None,
 		filename_extra_parameters:dict={},
-		npartitions:int=C_.N_DASK,
+		npartitions:int=C_.N_JOBS,
 		any_band_points=C_.MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT,
 		):
 		class_dfkey = self.df_index_names['label']

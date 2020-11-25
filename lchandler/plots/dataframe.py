@@ -10,7 +10,7 @@ import flamingchoripan.cuteplots.colors as cc
 ###################################################################################################################################################
 
 def plot_class_distribution_df(labels_df, detections_df, label_to_class_dict, df_index_names, class_names, band_dictionary, survey_name,
-	figsize=(15,10),
+	figsize=None,
 	uses_log_scale:bool=False,
 	band_names:list=['g','r'],
 	add_band_lengths:bool=False,
@@ -40,9 +40,8 @@ def plot_class_distribution_df(labels_df, detections_df, label_to_class_dict, df
 		'cmap':cmap,
 		'legend_ncol':len(band_names),
 		'rotate_xlabel':rotate_xlabel,
+		'figsize':figsize,
 	}
-	if not figsize is None:
-		plt_kwargs['figsize'] = figsize 
 	fig, ax = cplots.plot_hist_labels(to_plot, class_names, **plt_kwargs)
 	fig.tight_layout()
 	plt.show()
