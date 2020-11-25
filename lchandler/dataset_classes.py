@@ -275,31 +275,58 @@ class LCSet():
 		df.index.rename(C_.SET_NAME_STR, inplace=True)
 		return df, self.get_mean_length_df_bdict()
 
+	def get_serial_stats_idf_c(self, c):
+		lcobjs = self.get_lcobjs(c)
+		if len(lcobjs)>0:
+			xs = [lcobj.get_x_serial() for lcobj in lcobjs]
+			info_dict = {
+				f'{c}-$x$':fstats.XError(np.concatenate([x[:,C_.OBS_INDEX] for x in xs])),
+				f'{c}-$L$':fstats.XError([len(lcobj) for lcobj in lcobjs]),
+				f'{c}-$\Delta T$':fstats.XError([lcobj.get_days_serial_duration() for lcobj in lcobjs]),
+				f'{c}-$\Delta t$':fstats.XError(np.concatenate([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs])),
+			}
+		else:
+			info_dict = {
+				f'{c}-$x$':fstats.XError([]),
+				f'{c}-$L$':fstats.XError([]),
+				f'{c}-$\Delta T$':fstats.XError([]),
+				f'{c}-$\Delta t$':fstats.XError([]),
+			}
+		return info_dict
+
 	def get_serial_stats_idf(self,
 		index=None,
 		):
 		info_dict = {}
 		for kc,c in enumerate(self.class_names):
-			lcobjs = self.get_lcobjs(c)
-			xs = [lcobj.get_x_serial() for lcobj in lcobjs]
-			info_dict[f'{c}-$x$'] = fstats.XError(np.concatenate([x[:,C_.OBS_INDEX] for x in xs]))
-			info_dict[f'{c}-$L$'] = fstats.XError([len(lcobj) for lcobj in lcobjs])
-			info_dict[f'{c}-$\Delta T$'] = fstats.XError([lcobj.get_days_serial_duration() for lcobj in lcobjs])
-			info_dict[f'{c}-$\Delta t$'] = fstats.XError(np.concatenate([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs]))
-		df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
+			info_dict.update(self.get_serial_stats_idf_c(c))
+
+		info_dict = {id(self) if index is None else index:info_dict}
+		df = pd.DataFrame.from_dict(info_dict, orient='index').reindex(list(info_dict.keys()))
 		df.index.rename(C_.SET_NAME_STR, inplace=True)
 		return df
 
 	def get_bstats_idf_c(self, c, b,
 		index=None,
 		):
-		info_dict = {}
 		lcobjs = self.get_lcobjs(c)
-		info_dict[f'{c}-$x$'] = fstats.XError(np.concatenate([x.get_b(b).obs for x in lcobjs]))
-		info_dict[f'{c}-$L$'] = fstats.XError([len(x.get_b(b)) for x in lcobjs])
-		info_dict[f'{c}-$\Delta T$'] = fstats.XError([x.get_b(b).get_days_duration() for x in lcobjs if len(x.get_b(b))>=1])
-		info_dict[f'{c}-$\Delta t$'] = fstats.XError(np.concatenate([x.get_b(b).get_diff('days') for x in lcobjs]))
-		df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
+		if len(lcobjs)>0:
+			info_dict = {
+				f'{c}-$x$':fstats.XError(np.concatenate([x.get_b(b).obs for x in lcobjs])),
+				f'{c}-$L$':fstats.XError([len(x.get_b(b)) for x in lcobjs]),
+				f'{c}-$\Delta T$':fstats.XError([x.get_b(b).get_days_duration() for x in lcobjs if len(x.get_b(b))>=1]),
+				f'{c}-$\Delta t$':fstats.XError(np.concatenate([x.get_b(b).get_diff('days') for x in lcobjs])),
+			}
+		else:
+			info_dict = {
+				f'{c}-$x$':fstats.XError([]),
+				f'{c}-$L$':fstats.XError([]),
+				f'{c}-$\Delta T$':fstats.XError([]),
+				f'{c}-$\Delta t$':fstats.XError([]),
+			}
+		
+		info_dict = {id(self) if index is None else index:info_dict}
+		df = pd.DataFrame.from_dict(info_dict, orient='index').reindex(list(info_dict.keys()))
 		df.index.rename(C_.SET_NAME_STR, inplace=True)
 		return df
 

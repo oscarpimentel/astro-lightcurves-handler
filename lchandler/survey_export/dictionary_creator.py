@@ -124,8 +124,6 @@ class LightCurveDictionaryCreator():
 			name += f'{k}-{name_parameters[k]}_'
 		return name[:-1]
 
-	#################################### EXPORT
-
 	def get_label(self, labels_df:pd.DataFrame, lcobj_name:str, easy_label_dict:dict):
 		label = labels_df[self.df_index_names['label']][lcobj_name]
 		uint_label = easy_label_dict[label]
@@ -154,11 +152,14 @@ class LightCurveDictionaryCreator():
 			curve[:,C_.OBSE_INDEX] = flux_error
 			return curve
 
+	###################################################################################################################################################
+
 	def export_dictionary(self, description:str, save_folder:str,
 		band_names:list=None,
 		filename_extra_parameters:dict={},
 		npartitions:int=C_.N_JOBS,
 		any_band_points=C_.MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT,
+		outliers_df=None,
 		):
 		class_dfkey = self.df_index_names['label']
 		band_dfkey = self.df_index_names['band']
@@ -196,6 +197,7 @@ class LightCurveDictionaryCreator():
 		)
 		lcdataset = dsc.LCDataset()
 		lcdataset.set_lcset('raw', lcset)
+		lcdataset.set_lcset('outliers', lcset.copy())
 
 		### get filename
 		filename_parameters = {
@@ -206,7 +208,8 @@ class LightCurveDictionaryCreator():
 		save_filedir = f'{save_folder}/{self.get_dict_name(filename_parameters)}.{C_.EXT_RAW_LIGHTCURVE}'
 		print(f'save_filedir: {save_filedir}')
 
-		### easy dict
+		### easy variables
+		outliers = [] if outliers_df is None else list(outliers_df['outliers'].values) 
 		easy_label_dict = {self.class_to_label_dict[c]:kc for kc,c in enumerate(self.class_names)}
 		print(f'easy_label_dict: {easy_label_dict}')
 
@@ -236,7 +239,7 @@ class LightCurveDictionaryCreator():
 					ra, dec = self.get_radec(self.labels_df, lcobj_name)
 					lcobj.ra = ra
 					lcobj.dec = dec
-					lcdataset['raw'].set_lcobj(lcobj_name, lcobj)
+					lcdataset['outliers' if lcobj_name in outliers else 'raw'].set_lcobj(lcobj_name, lcobj)
 					correct_samples += 1
 				else:
 					pass
