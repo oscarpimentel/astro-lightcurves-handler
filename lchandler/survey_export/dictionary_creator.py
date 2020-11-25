@@ -196,8 +196,8 @@ class LightCurveDictionaryCreator():
 			True,
 		)
 		lcdataset = dsc.LCDataset()
-		lcdataset.set_lcset('raw', lcset)
 		lcdataset.set_lcset('outliers', lcset.copy())
+		lcdataset.set_lcset('raw', lcset.copy())
 
 		### get filename
 		filename_parameters = {
