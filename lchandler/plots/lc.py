@@ -40,7 +40,7 @@ def plot_lightcurve(ax, lcobj, b,
 	obs = lcobjb.obs[valid_indexs]
 	obse = lcobjb.obse[valid_indexs]
 
-	bar = stats.norm(loc=0, scale=std_factor*obse).ppf(percentile_bar)
+	bar = stats.norm(loc=0, scale=std_factor*obse).ppf(percentile_bar/100.) # I think It's correct, check with standar norm and p=84.1 > bar=1
 	color = C_.COLOR_DICT[b]
 	if mode=='shadow':
 		ax.fill_between(new_days, obs-bar, obs+bar, facecolor=color, alpha=0.25)
