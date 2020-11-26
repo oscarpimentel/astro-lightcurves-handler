@@ -19,8 +19,8 @@ def plot_class_distribution(lcdataset, lcset_names,
 	lcset = lcdataset[lcset_names[0]]
 	lcobj_classes = lcset.get_lcobj_classes()
 	pop_dict = {lcset_name:lcdataset[lcset_name].get_lcobj_classes() for lcset_name in lcset_names}
-	title = 'class population distribution\n'
-	#title += f'survey: {lcset.survey} - set: {lcset_name} - N: {len(lcobj_classes):,}'
+	title = 'class population distributions\n'
+	title += f'survey: {lcset.survey}'
 	plt_kwargs = {
 		#'ylabel':'' if ks>0 else None,
 		'title':title,

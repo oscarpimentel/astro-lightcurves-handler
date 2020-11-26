@@ -101,6 +101,7 @@ class LCDataset():
 		sigma_m:float=3.,
 		apply_lower_bound:bool=True,
 		verbose:int=1,
+		remove_old_lcset=True,
 		):
 		printClass = ShowPrints if verbose else HiddenPrints
 		with printClass():
@@ -123,6 +124,9 @@ class LCDataset():
 			lcset.reset_day_offset_serial()
 			sigma_samples = len(lcset.get_lcset_values_b(b, 'obse'))
 			print(f'sigma_samples: {sigma_samples:,} - total_deleted_points: {total_deleted_points}')
+
+		if remove_old_lcset:
+			self.del_lcset(lcset_name)
 		return total_deleted_points
 
 	def get_serial_stats_idf(self,
@@ -440,3 +444,10 @@ class LCSet():
 		'''
 		for lcobj in self.get_lcobjs():
 			lcobj.reset_day_offset_serial(store_day_offset)
+
+	def __add__(self, other):
+		new = self.copy()
+		lcobj_names = other.get_lcobj_names()
+		for lcobj_name in lcobj_names:
+			new.set_lcobj(lcobj_name, other[lcobj_name].copy())
+		return new
