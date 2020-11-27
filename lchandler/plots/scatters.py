@@ -9,7 +9,7 @@ from flamingchoripan.cuteplots import colors as cc
 ###################################################################################################################################################
 
 def plot_obs_obse_scatter(lcdataset, set_names,
-	n=None,
+	plot_ndict=None,
 	figsize:tuple=(12,8),
 	alpha=0.7,
 	markersize=1.2,
@@ -18,7 +18,7 @@ def plot_obs_obse_scatter(lcdataset, set_names,
 	band_names = lcdataset[set_names[0]].band_names
 	#cmap = cc.get_default_cmap(len(set_names))
 	cmap = cc.colorlist_to_cmap(['k']+cc.COLORS_DICT['cc_favs2'])
-	n = [None]*len(set_names) if n is None else n
+	plot_ndict = {pnk:None for pnk in plot_ndict.keys()} if plot_ndict is None else plot_ndict
 	for kb,b in enumerate(band_names):
 		ax = axs[kb]
 		for k,set_name in enumerate(set_names):
@@ -27,8 +27,8 @@ def plot_obs_obse_scatter(lcdataset, set_names,
 
 			obse = lcset.get_lcset_values_b(b, 'obse')
 			obs = lcset.get_lcset_values_b(b, 'obs')
-			if not n[k] is None:
-				idxs = np.random.permutation(np.arange(0, len(obse)))[:int(n)]
+			if not plot_ndict[set_name] is None:
+				idxs = np.random.permutation(np.arange(0, len(obse)))[:int(plot_ndict[set_name])]
 				obse = obse[idxs]
 				obs = obs[idxs]
 			label = '$p(x_{ij},\sigma_{xij})$'+f' {set_name} samples'

@@ -44,7 +44,7 @@ class LCDataset():
 		return lcset_name in self.get_lcset_names()
 
 	def del_lcset(self, lcset_name):
-		self.lcsets.pop(lcset_name, None)
+		self.lcsets.pop(lcset_name, None) # pop and lost reference
 
 	def __getitem__(self, lcset_name):
 		return self.lcsets[lcset_name]
