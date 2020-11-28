@@ -74,6 +74,7 @@ def process_df_detections(df, index_name, new_index_name, detections_cols,
 	uses_corr=True,
 	npartitions=C_.N_JOBS,
 	clean_detections=True,
+	clean_invalid_objs=False,
 	):
 	assert df.index.name==index_name
 	if not uses_corr:
@@ -82,9 +83,10 @@ def process_df_detections(df, index_name, new_index_name, detections_cols,
 	df = df.reset_index()
 	df = drop_duplicates_mjd(df, new_index_name) # delete more samples
 	#df = drop_duplicates(df) # some samples can bypass this as there are different obs in same objs/days/bands
+	if clean_invalid_objs:
+		df = delete_invalid_objs(df, new_index_name) # deletes a lot of objects
 	if clean_detections:
 		df = delete_invalid_detections(df, new_index_name, uses_corr, npartitions)
-		#df = delete_invalid_objs(df, new_index_name) # deletes a lot of objects
 		
 	df = subset_df_columns(df, detections_cols+[new_index_name]) # sub sample columns
 	df = df.set_index([new_index_name])

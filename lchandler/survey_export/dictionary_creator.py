@@ -216,7 +216,7 @@ class LightCurveDictionaryCreator():
 		# start loop
 		correct_samples = 0
 		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
-		lcobj_names = list(set(detections_df.index))
+		lcobj_names = sorted(list(set(detections_df.index)))
 		bar = ProgressBar(len(lcobj_names))
 		for k,lcobj_name in enumerate(lcobj_names):
 			try:

@@ -18,7 +18,7 @@ def plot_obs_obse_scatter(lcdataset, set_names,
 	band_names = lcdataset[set_names[0]].band_names
 	#cmap = cc.get_default_cmap(len(set_names))
 	cmap = cc.colorlist_to_cmap(['k']+cc.COLORS_DICT['cc_favs2'])
-	plot_ndict = {pnk:None for pnk in plot_ndict.keys()} if plot_ndict is None else plot_ndict
+	plot_ndict = {set_name:None for set_name in set_names} if plot_ndict is None else plot_ndict
 	for kb,b in enumerate(band_names):
 		ax = axs[kb]
 		for k,set_name in enumerate(set_names):
@@ -31,6 +31,7 @@ def plot_obs_obse_scatter(lcdataset, set_names,
 				idxs = np.random.permutation(np.arange(0, len(obse)))[:int(plot_ndict[set_name])]
 				obse = obse[idxs]
 				obs = obs[idxs]
+
 			label = '$p(x_{ij},\sigma_{xij})$'+f' {set_name} samples'
 			ax.plot(obse, obs, '.', c=c, markersize=markersize, alpha=alpha); ax.plot(np.nan, np.nan, '.', c=c, alpha=1, label=label)
 
