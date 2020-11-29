@@ -119,7 +119,7 @@ class SubLCO():
 				self.set_log('obs')
 
 	def add_obs_noise_gaussian(self, obs_min_lim:float,
-		std_scale:float=0.99,
+		std_scale:float=1.,
 		recalculate:bool=True,
 		):
 		'''
