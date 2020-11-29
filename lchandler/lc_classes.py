@@ -268,7 +268,7 @@ class SubLCO():
 		return txt
 
 	def clean_small_cadence(self,
-		dt=12./24.,
+		dt=C_.CADENCE_THRESHOLD,
 		mode='min_obse',
 		):
 		ddict = {}
@@ -296,6 +296,13 @@ class SubLCO():
 				raise Exception(f'no mode {mode}')
 
 		self.set_values(np.array(new_days), np.array(new_obs), np.array(new_obse))
+
+	def get_snr(self):
+		if len(self)==0:
+			return -np.infty
+		else:
+			snr = (self.obs**2)/(self.obse**2)
+			return np.mean(snr)
 
 ###################################################################################################################################################
 
@@ -493,7 +500,10 @@ class LCO():
 		return any([len(self.get_b(b))>=th_length for b in self.bands])
 
 	def clean_small_cadence(self,
-		dt=12./24.,
+		dt=C_.CADENCE_THRESHOLD,
 		):
 		for b in self.bands:
 			self.get_b(b).clean_small_cadence(dt)
+
+	def get_snr(self):
+		return max([self.get_b(b).get_snr() for b in self.bands])

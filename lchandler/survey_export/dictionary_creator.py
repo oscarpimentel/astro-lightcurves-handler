@@ -197,6 +197,7 @@ class LightCurveDictionaryCreator():
 		)
 		lcdataset = dsc.LCDataset()
 		lcdataset.set_lcset('outliers', lcset.copy())
+		lcdataset.set_lcset('faint', lcset.copy())
 		lcdataset.set_lcset('raw', lcset.copy())
 
 		### get filename
@@ -242,7 +243,12 @@ class LightCurveDictionaryCreator():
 					ra, dec = self.get_radec(self.labels_df, lcobj_name)
 					lcobj.ra = ra
 					lcobj.dec = dec
-					lcdataset['outliers' if lcobj_name in outliers else 'raw'].set_lcobj(lcobj_name, lcobj)
+					lcset_name = 'raw'
+					if lcobj_name in outliers:
+						lcset_name = 'outliers'
+					elif lcobj.get_snr()<C_.MIN_SNR:
+						lcset_name = 'faint'
+					lcdataset[lcset_name].set_lcobj(lcobj_name, lcobj)
 					correct_samples += 1
 				else:
 					pass

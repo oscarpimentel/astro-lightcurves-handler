@@ -11,9 +11,11 @@ PLOT_PERCENTILE_BAR = 90.
 N_JOBS = 6 # The number of jobs to use for the computation. If -1 all CPUs are used. If 1 is given, no parallel computing code is used at all, which is useful for debugging. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used.
 CHUNK_SIZE = N_JOBS*1
 
-### LENGTHS
+### THRESHOLDS
 MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT = 5
 MIN_POINTS_LIGHTCURVE_DEFINITION = 2
+MIN_SNR = 55.
+CADENCE_THRESHOLD = 12./24.
 
 ### FILE TYPES
 EXT_RAW_LIGHTCURVE = 'ralcds' # no split, as raw light-curve-data-set
