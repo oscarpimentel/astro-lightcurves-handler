@@ -229,12 +229,15 @@ class LightCurveDictionaryCreator():
 					original_lc = band_object_df[[self.df_index_names['obs_day'], self.df_index_names['obs'], self.df_index_names['obs_error']]].values
 					band_lc_flux = self.get_band(original_lc)
 					lcobj.add_b(b, band_lc_flux[:,0], band_lc_flux[:,1], band_lc_flux[:,2])
+
+				lcobj.clean_small_cadence()
 				lcobj.reset_day_offset_serial()
 
 				### get label
 				y = self.get_label(self.labels_df, lcobj_name, easy_label_dict)
 				lcobj.set_y(y)
 
+				### check lengths
 				if lcobj.any_band_eqover_length(any_band_points):
 					ra, dec = self.get_radec(self.labels_df, lcobj_name)
 					lcobj.ra = ra

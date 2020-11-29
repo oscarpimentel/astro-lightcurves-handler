@@ -118,7 +118,8 @@ class SubLCO():
 			if hasattr(self, 'log_obs'):
 				self.set_log('obs')
 
-	def add_obs_noise_gaussian(self, std_scale:float, obs_min_lim:float,
+	def add_obs_noise_gaussian(self, obs_min_lim:float,
+		std_scale:float=0.99,
 		recalculate:bool=True,
 		):
 		'''
@@ -265,6 +266,36 @@ class SubLCO():
 		txt += f', o:{self.obs}{self.obs.dtype}'
 		txt += f', oe:{self.obse}{self.obse.dtype}]'
 		return txt
+
+	def clean_small_cadence(self,
+		dt=12./24.,
+		mode='min_obse',
+		):
+		ddict = {}
+		i = 0
+		while i<len(self.days):
+			day = self.days[i]
+			valid_indexs = np.where((self.days>=day) & (self.days<day+dt))[0]
+			ddict[day] = valid_indexs
+			i += len(valid_indexs)
+
+		new_days = []
+		new_obs = []
+		new_obse = []
+		for k in ddict.keys():
+			if mode=='mean':
+				new_days.append(np.mean(self.days[ddict[k]]))
+				new_obs.append(np.mean(self.obs[ddict[k]]))
+				new_obse.append(np.mean(self.obse[ddict[k]]))
+			elif mode=='min_obse':
+				i = np.argmin(self.obse[ddict[k]])
+				new_days.append(self.days[ddict[k]][i])
+				new_obs.append(self.obs[ddict[k]][i])
+				new_obse.append(self.obse[ddict[k]][i])
+			else:
+				raise Exception(f'no mode {mode}')
+
+		self.set_values(np.array(new_days), np.array(new_obs), np.array(new_obse))
 
 ###################################################################################################################################################
 
@@ -460,3 +491,9 @@ class LCO():
 		th_length=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		):
 		return any([len(self.get_b(b))>=th_length for b in self.bands])
+
+	def clean_small_cadence(self,
+		dt=12./24.,
+		):
+		for b in self.bands:
+			self.get_b(b).clean_small_cadence(dt)
