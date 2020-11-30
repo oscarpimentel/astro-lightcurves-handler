@@ -269,7 +269,7 @@ class SubLCO():
 
 	def clean_small_cadence(self,
 		dt=C_.CADENCE_THRESHOLD,
-		mode='min_obse',
+		mode='expectation',
 		):
 		ddict = {}
 		i = 0
@@ -292,6 +292,14 @@ class SubLCO():
 				new_days.append(self.days[ddict[k]][i])
 				new_obs.append(self.obs[ddict[k]][i])
 				new_obse.append(self.obse[ddict[k]][i])
+			elif mode=='expectation':
+				obse_exp = np.exp(-np.log(self.obse[ddict[k]]+C_.EPS))
+				assert len(np.where(obse_exp==np.infty)[0])==0
+				#print(obse_exp, obse_exp.shape)
+				dist = obse_exp/obse_exp.sum()
+				new_days.append(np.sum(self.days[ddict[k]]*dist))
+				new_obs.append(np.sum(self.obs[ddict[k]]*dist))
+				new_obse.append(np.sum(self.obse[ddict[k]]*dist))
 			else:
 				raise Exception(f'no mode {mode}')
 
@@ -501,9 +509,10 @@ class LCO():
 
 	def clean_small_cadence(self,
 		dt=C_.CADENCE_THRESHOLD,
+		mode='expectation',
 		):
 		for b in self.bands:
-			self.get_b(b).clean_small_cadence(dt)
+			self.get_b(b).clean_small_cadence(dt, mode)
 
 	def get_snr(self):
 		return max([self.get_b(b).get_snr() for b in self.bands])
