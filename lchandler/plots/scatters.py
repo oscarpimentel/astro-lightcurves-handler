@@ -41,8 +41,8 @@ def plot_obs_obse_scatter(lcdataset, set_names,
 			ax.set_xlabel('obs-error')
 			ax.set_ylabel('obs' if kb==0 else None)
 			ax.legend()
-			#ax.set_xlim([0.0025, 0.02])
-			ax.set_ylim([0, 0.4])
+			ax.set_xlim([0.0, 0.05])
+			ax.set_ylim([0.0, 0.4])
 
 			### multiband colors
 			#ax.grid(color=C_.COLOR_DICT[b])

@@ -121,7 +121,7 @@ class LightCurveDictionaryCreator():
 	def get_dict_name(self, name_parameters:dict):
 		name = ''
 		for k in name_parameters.keys():
-			name += f'{k}-{name_parameters[k]}_'
+			name += f'{k}={name_parameters[k]}°'
 		return name[:-1]
 
 	def get_label(self, labels_df:pd.DataFrame, lcobj_name:str, easy_label_dict:dict):
