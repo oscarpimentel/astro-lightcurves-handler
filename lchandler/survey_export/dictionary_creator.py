@@ -253,7 +253,6 @@ class LightCurveDictionaryCreator():
 				else:
 					pass
 					#print(lcobj_name)
-				
 				bar(f'obj: {lcobj_name} - y: {y} - c: {self.class_names[y]} - lengths_bdict: {lcobj.get_length_bdict()} - correct_samples (any-band>={any_band_points}): {correct_samples:,}')
 					
 			except KeyboardInterrupt:
