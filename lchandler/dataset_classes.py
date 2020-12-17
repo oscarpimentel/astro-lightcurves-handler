@@ -238,20 +238,15 @@ class LCSet():
 	def get_populations_cdict(self):
 		return fstats.get_populations_cdict(self.get_lcobj_classes(), self.class_names)
 
-	def get_class_freq_weights_cdict(self):
+	def get_class_freq_weights_cdict(self, *args, **kwargs):
 		pop_cdict = self.get_populations_cdict()
 		total_pop = sum([pop_cdict[c] for c in self.class_names])
 		return {c:total_pop/pop_cdict[c] for c in self.class_names}
 
-	def get_class_brfc_weights_cdict(self):
-		# used for BalancedRandomForestClassifier
-		pop_cdict = self.get_populations_cdict()
-		total_pop = sum([pop_cdict[c] for c in self.class_names])
-		return {c:total_pop/(len(self.class_names)*pop_cdict[c]) for c in self.class_names}
-
 	def get_class_efective_weigths_cdict(self, beta):
 		assert beta>0 and beta<1
-		return {c:(1-beta**pop_cdict[c])/(1-beta) for c in self.class_names}
+		pop_cdict = self.get_populations_cdict()
+		return {c:(1-beta)/(1-beta**pop_cdict[c]) for c in self.class_names}
 
 	def get_mean_length_df_bdict(self,
 		index=None,
