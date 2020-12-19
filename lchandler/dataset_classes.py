@@ -238,15 +238,23 @@ class LCSet():
 	def get_populations_cdict(self):
 		return fstats.get_populations_cdict(self.get_lcobj_classes(), self.class_names)
 
-	def get_class_freq_weights_cdict(self, *args, **kwargs):
+	def get_class_freq_weights_cdict(self,
+		norm=True,
+		):
 		pop_cdict = self.get_populations_cdict()
 		total_pop = sum([pop_cdict[c] for c in self.class_names])
-		return {c:total_pop/pop_cdict[c] for c in self.class_names}
+		w = {c:total_pop/pop_cdict[c] for c in self.class_names}
+		w = {c:w[c]/sum([w[c] for c in self.class_names]) for c in self.class_names} if norm else w
+		return w
 
-	def get_class_effective_weigths_cdict(self, beta):
+	def get_class_effective_weigths_cdict(self, beta,
+		norm=True,
+		):
 		assert beta>0 and beta<1
 		pop_cdict = self.get_populations_cdict()
-		return {c:(1-beta)/(1-beta**pop_cdict[c]) for c in self.class_names}
+		w = {c:(1-beta)/(1-beta**pop_cdict[c]) for c in self.class_names}
+		w = {c:w[c]/sum([w[c] for c in self.class_names]) for c in self.class_names} if norm else w
+		return w
 
 	def get_mean_length_df_bdict(self,
 		index=None,
