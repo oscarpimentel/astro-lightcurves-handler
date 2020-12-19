@@ -243,7 +243,7 @@ class LCSet():
 		total_pop = sum([pop_cdict[c] for c in self.class_names])
 		return {c:total_pop/pop_cdict[c] for c in self.class_names}
 
-	def get_class_efective_weigths_cdict(self, beta):
+	def get_class_effective_weigths_cdict(self, beta):
 		assert beta>0 and beta<1
 		pop_cdict = self.get_populations_cdict()
 		return {c:(1-beta)/(1-beta**pop_cdict[c]) for c in self.class_names}
