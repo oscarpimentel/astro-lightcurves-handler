@@ -414,7 +414,7 @@ class LCSet():
 		min_population = pop_cdict[min_populated_class]
 		return min_populated_class, min_population
 
-	def get_random_stratified_keys(self, nc):
+	def get_random_stratified_lcobj_names(self, nc):
 		return fstats.get_random_stratified_keys(self.get_lcobj_names(), self.get_lcobj_classes(), self.class_names, nc)
 
 	def get_lcset_values_b(self, b:str, attr:str,
