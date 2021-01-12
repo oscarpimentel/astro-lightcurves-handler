@@ -181,9 +181,11 @@ class LCSet():
 		return [self[lcobj_name] for lcobj_name in self.get_lcobj_names(c)]
 
 	def clean_empty_obs_keys(self,
+		length_to_keep=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		verbose:int=1,
 		):
-		to_delete_lcobj_names = [lcobj_name for lcobj_name in self.get_lcobj_names() if not np.any([len(self[lcobj_name].get_b(b))>=C_.MIN_POINTS_LIGHTCURVE_DEFINITION for b in self.band_names])]
+		lcobj_names = self.get_lcobj_names()
+		to_delete_lcobj_names = [lcobj_name for lcobj_name in lcobj_names if not any([len(self[lcobj_name].get_b(b))>=length_to_keep for b in self.band_names])]
 		deleted_lcobjs = len(to_delete_lcobj_names)
 
 		if verbose:
