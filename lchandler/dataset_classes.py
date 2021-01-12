@@ -30,8 +30,10 @@ def search_over_sigma_samples(lcset, b:str, dist_mean, dist_sigma, sigma_m,
 ###################################################################################################################################################
 
 class LCDataset():
-	def __init__(self):
-		self.lcsets = {}
+	def __init__(self,
+		lcsets={},
+		):
+		self.lcsets = lcsets
 
 	def set_lcset(self, lcset_name:str, lcset):
 		self.lcsets[lcset_name] = lcset
@@ -148,6 +150,10 @@ class LCDataset():
 			df = self[lcset_name].get_bstats_idf(b, lcset_name)
 			dfs.append(df)
 		return pd.concat(dfs)
+
+	def copy(self):
+		lcsets = {k:self.lcsets[k].copy() for k in self.lcsets.keys()}
+		return LCDataset(lcsets)
 
 ###################################################################################################################################################
 
@@ -399,8 +405,9 @@ class LCSet():
 	def copy(self,
 		data:dict=None,
 		):
+		new_data = {key:self.data[key].copy() for key in self.data.keys()} if data is None else {key:data[key].copy() for key in data.keys()}
 		new_set = LCSet(
-			{key:self.data[key].copy() for key in self.data.keys()} if data is None else data,
+			new_data,
 			self.survey,
 			self.description,
 			self.band_names,
