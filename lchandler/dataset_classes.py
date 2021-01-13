@@ -68,7 +68,7 @@ class LCDataset():
 			print(f'({lcset_name}) deleted keys: {deleted_keys}')
 
 	def split(self, to_split_lcset_name, new_lcsets,
-		random_state=42,
+		random_state=0,
 		):
 		'''stratified'''
 		sum_ = sum([new_lcsets[k] for k in new_lcsets.keys()])
