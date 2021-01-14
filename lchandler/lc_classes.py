@@ -5,6 +5,7 @@ from . import C_
 import numpy as np
 import random
 import copy
+from scipy.stats import t
 
 ###################################################################################################################################################
 
@@ -28,6 +29,19 @@ def log_vector(x:np.ndarray):
 
 def inv_log_vector(x:np.ndarray):
 	return np.exp(x)-1
+
+def get_obs_noise_gaussian(obs, obse, obs_min_lim,
+	std_scale:float=C_.OBSE_STD_SCALE,
+	mode='t',
+	):
+	if mode=='norm':
+		obs_values = np.clip(np.random.normal(obs, obse*std_scale), obs_min_lim, None)
+	elif mode=='t':
+		t_rvs = t.rvs(5, obs, obse*std_scale)
+		obs_values = np.clip(t_rvs, obs_min_lim, None)
+	else:
+		raise Exception(f'no mode {mode}')
+	return obs_values
 
 ###################################################################################################################################################
 
@@ -119,16 +133,16 @@ class SubLCO():
 				self.set_log('obs')
 
 	def add_obs_noise_gaussian(self, obs_min_lim:float,
-		std_scale:float=1.,
+		std_scale:float=C_.OBSE_STD_SCALE,
+		mode='t',
 		recalculate:bool=True,
 		):
 		'''
 		This method overrides information!
 		'''
 		assert np.all(self.obs>=obs_min_lim)
-		obs_values = np.clip(np.random.normal(self.obs, self.obse*std_scale), obs_min_lim, None)
-		obs_values = obs_values-self.obs
-		self.add_obs_values(obs_values)
+		obs_values = get_obs_noise_gaussian(self.obs, self.obse, obs_min_lim, std_scale, mode)
+		self.add_obs_values(obs_values-self.obs, recalculate)
 
 	def apply_downsampling(self, ds_prob,
 		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
