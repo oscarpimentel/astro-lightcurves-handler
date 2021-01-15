@@ -32,7 +32,7 @@ def inv_log_vector(x:np.ndarray):
 
 def get_obs_noise_gaussian(obs, obse, obs_min_lim,
 	std_scale:float=C_.OBSE_STD_SCALE,
-	mode='t',
+	mode='norm',
 	):
 	if mode=='norm':
 		obs_values = np.clip(np.random.normal(obs, obse*std_scale), obs_min_lim, None)
@@ -134,7 +134,7 @@ class SubLCO():
 
 	def add_obs_noise_gaussian(self, obs_min_lim:float,
 		std_scale:float=C_.OBSE_STD_SCALE,
-		mode='t',
+		mode='norm',
 		recalculate:bool=True,
 		):
 		'''
