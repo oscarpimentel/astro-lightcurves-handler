@@ -78,7 +78,8 @@ class SubLCO():
 
 	def set_obse(self, obs_errors):
 		assert len(obs_errors.shape)==1
-		assert np.all(obs_errors>=0)
+		if not np.all(obs_errors>0):
+			raise Exception(f'wrong obs_errors: {obs_errors}')
 		self.obse = obs_errors
 
 	def add_day_values(self, values,
