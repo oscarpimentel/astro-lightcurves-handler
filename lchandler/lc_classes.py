@@ -150,7 +150,7 @@ class SubLCO():
 		recalculate:bool=True,
 		):
 		assert ds_prob>=0 and ds_prob<=1
-		if len(self)<=min_valid_length:
+		if len(self)<=min_valid_length or ds_prob==0:
 			return
 
 		valid_mask = np.random.uniform(0, 1, len(self))>ds_prob
@@ -407,6 +407,7 @@ class LCO():
 	#########  serial/multiband important methods
 	def reset_day_offset_serial(self,
 		store_day_offset:bool=False,
+		return_day_offset:bool=False,
 		):
 		'''
 		delete day offset acording to the first day along any day!
@@ -419,7 +420,10 @@ class LCO():
 			self.get_b(b).days -= day_offset
 		if store_day_offset:
 			self.global_first_day = day_offset
-		return day_offset
+			
+		if return_day_offset:
+			return self, day_offset
+		return self
 
 	def get_sorted_days_indexs_serial(self):
 		values = [self.get_b(b).days for b in self.bands]
