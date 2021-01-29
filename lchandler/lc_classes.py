@@ -51,10 +51,11 @@ class SubLCO():
 	'''
 	def __init__(self, days:np.ndarray, obs:np.ndarray, obs_errors:np.ndarray,
 		y:int=None,
+		synthetic=False,
 		):
 		self.set_values(days, obs, obs_errors)
 		self.y = y
-		self.synthetic = False
+		self.synthetic = synthetic
 
 	def set_values(self, days:np.ndarray, obs:np.ndarray, obs_errors:np.ndarray):
 		'''
@@ -259,6 +260,7 @@ class SubLCO():
 			self.obs.copy(),
 			self.obse.copy(),
 			self.y,
+			self.synthetic,
 			)
 		for key in self.__dict__.keys():
 			if key in ['days', 'obs', 'obse']:
@@ -520,6 +522,15 @@ class LCO():
 
 	def any_synthetic(self):
 		return any([self.get_b(b).synthetic for b in self.bands])
+
+	def all_synthetic(self):
+		return all([self.get_b(b).synthetic for b in self.bands])
+
+	def any_real(self):
+		return any([not self.get_b(b).synthetic for b in self.bands])
+
+	def all_real(self):
+		return all([not self.get_b(b).synthetic for b in self.bands])
 
 	def any_band_eqover_length(self,
 		th_length=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,

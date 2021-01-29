@@ -67,34 +67,24 @@ class LCDataset():
 			deleted_keys = self[lcset_name].clean_empty_obs_keys(verbose=0)
 			print(f'({lcset_name}) deleted keys: {deleted_keys}')
 
-	def split(self, to_split_lcset_name, new_lcsets,
+	def split(self, to_split_lcset_name, new_sets_props,
+		kfolds=3,
 		random_state=0,
+		permute=0,
 		):
-		'''stratified'''
-		sum_ = sum([new_lcsets[k] for k in new_lcsets.keys()])
-		assert abs(1-sum_)<=C_.EPS
-		assert len(new_lcsets.keys())>=2
-
 		to_split_lcset = self[to_split_lcset_name]
-		lcobj_names = self[to_split_lcset_name].get_lcobj_names()
-		random.seed(random_state)
-		random.shuffle(lcobj_names)
-		to_split_lcset_data = {k:self[to_split_lcset_name].data[k] for k in lcobj_names}
-		populations_cdict = to_split_lcset.get_populations_cdict()
 		class_names = to_split_lcset.class_names
+		obj_names = to_split_lcset.get_lcobj_names()
+		obj_classes = [class_names[to_split_lcset[obj_name].y] for obj_name in obj_names]
+		obj_names_kdict = fstats.stratified_kfold_split(obj_names, obj_classes, class_names, new_sets_props, kfolds, random_state=random_state, permute=permute)
+		#print(obj_names_kdict)
 
-		for k,new_lcset_name in enumerate(new_lcsets.keys()):
-			self.set_lcset(new_lcset_name, to_split_lcset.copy({}))
-			for c in class_names:
-				to_fill_pop = int(populations_cdict[c]*new_lcsets[new_lcset_name])
-				lcobj_names = np.array(list(to_split_lcset_data.keys()))
-				lcobj_classes = np.array([class_names[to_split_lcset_data[lcobj_name].y] for lcobj_name in lcobj_names])
-				valid_indexs = np.where(lcobj_classes==c)[0][:to_fill_pop] if k<=len(new_lcsets.keys())-2 else np.where(lcobj_classes==c)[0]
-				lcobj_names = lcobj_names[valid_indexs].tolist()
-
-				for lcobj_name in lcobj_names:
-					lcobj = to_split_lcset_data.pop(lcobj_name)
-					self[new_lcset_name].data.update({lcobj_name:lcobj})
+		for new_set_name in obj_names_kdict.keys():
+			self.set_lcset(new_set_name, to_split_lcset.copy({}))
+			obj_names = obj_names_kdict[new_set_name]
+			for obj_name in obj_names:
+				lcobj = to_split_lcset[obj_name].copy()
+				self[new_set_name].data.update({obj_name:lcobj})
 
 		return
 
