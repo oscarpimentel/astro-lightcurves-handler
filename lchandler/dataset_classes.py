@@ -359,7 +359,7 @@ class LCSet():
 		lengths = sum([df[f'{c}-$L$'].values[0] for c in self.class_names])
 		durations = sum([df[f'{c}-$\Delta T$'].values[0] for c in self.class_names])
 		cadences = sum([df[f'{c}-$\Delta t$'].values[0] for c in self.class_names])
-		txt = f'(*) obs_samples: {lengths.sum():,} - min_len: {lengths.min()} - max_dur: {durations.max():.1f}[days] - dur(p50): {durations.p50:.1f}[days] - cadence(p50): {cadences.p50:.1f}[days]\n'
+		txt = f'(.) obs_samples: {lengths.sum():,} - min_len: {lengths.min()} - max_dur: {durations.max():.1f}[days] - dur(p50): {durations.p50:.1f}[days] - cadence(p50): {cadences.p50:.1f}[days]\n'
 		return txt
 
 	def __repr__(self):
