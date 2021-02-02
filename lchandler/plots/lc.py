@@ -27,6 +27,7 @@ def plot_lightcurve(ax, lcobj, b,
 	y_margin_offset_percent:float=10,
 	std_factor:int=C_.PLOT_OBSE_STD_SCALE, # asuming error as gaussian error
 	percentile_bar:float=C_.PLOT_PERCENTILE_BAR, # show bars as percentile bound
+	show_obs_len=True,
 	):
 	'''
 	plot a light curve!!
@@ -50,8 +51,8 @@ def plot_lightcurve(ax, lcobj, b,
 		raise Exception(f'not supported mode: {mode}')
 	
 	ax.plot(new_days, obs, ':', color=color, alpha=0.25*alpha)
-	if is_synthetic and not label is None:
-		label = label+' (synth)'
+	label = f'{label} [synth]' if is_synthetic and not label is None else label
+	label = f'{label} ({len(obs):,})' if show_obs_len else label
 	ax.plot(new_days, obs, 'o', color=color, label=label, alpha=alpha, markeredgecolor='k' if is_synthetic else None)
 
 	x_margins = get_margin(new_days, x_margin_offset_percent)
