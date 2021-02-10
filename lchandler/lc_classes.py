@@ -88,7 +88,7 @@ class SubLCO():
 		new_days = self.days+values
 		valid_indexs = np.argsort(new_days) # must sort before the values to mantain sequenciality
 		self.days = new_days # bypass set_days() because non-sorted asumption
-		self.apply_valid_indexs_to_attrs(valid_indexs) # apply valid indexs to all
+		self.apply_valid_indexs_to_attrs(valid_indexs, False) # apply valid indexs to all
 
 		### calcule again as the original values changed
 		if recalculate:
@@ -101,6 +101,8 @@ class SubLCO():
 		'''
 		This method overrides information!
 		'''
+		if hours_noise==0:
+			return
 		hours_noise = np.random.uniform(-hours_noise, hours_noise, size=len(self))
 		self.add_day_values(hours_noise/24., recalculate)
 
@@ -129,6 +131,8 @@ class SubLCO():
 		'''
 		This method overrides information!
 		'''
+		if std_scale==0:
+			return
 		assert np.all(self.obs>=obs_min_lim)
 		obs_values = get_obs_noise_gaussian(self.obs, self.obse, obs_min_lim, std_scale, mode)
 		self.add_obs_values(obs_values-self.obs, recalculate)
