@@ -169,7 +169,10 @@ class LCSet():
 	def get_lcobj_names(self,
 		c=None,
 		):
-		return [k for k in self.data.keys() if self.class_names[self.data[k].y]==c or c is None]
+		if c is None:
+			return list(self.data.keys())
+		else:
+			return [k for k in self.data.keys() if self.class_names[self.data[k].y]==c]
 
 	def get_lcobjs(self,
 		c=None,
