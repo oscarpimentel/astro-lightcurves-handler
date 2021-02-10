@@ -23,13 +23,6 @@ def diff_vector(x:np.ndarray,
 		dx = np.diff(x, axis=0)
 		return dx[:,0]
 
-def log_vector(x:np.ndarray):
-	assert np.all(x>=0)
-	return np.log(x+1)
-
-def inv_log_vector(x:np.ndarray):
-	return np.exp(x)-1
-
 def get_obs_noise_gaussian(obs, obse, obs_min_lim,
 	std_scale:float=C_.OBSE_STD_SCALE,
 	mode='norm',
@@ -90,7 +83,6 @@ class SubLCO():
 		This method overrides information!
 		Always use this method to add values
 		calcule d_days again
-		calcule log_days again
 		'''
 		assert len(self)==len(values)
 		new_days = self.days+values
@@ -102,8 +94,6 @@ class SubLCO():
 		if recalculate:
 			if hasattr(self, 'd_days'): 
 				self.set_diff('days')
-			if hasattr(self, 'log_days'):
-				self.set_log('days')
 
 	def add_day_noise_uniform(self, hours_noise:float,
 		recalculate:bool=True,
@@ -121,7 +111,6 @@ class SubLCO():
 		This method overrides information!
 		Always use this method to add values
 		calcule d_obs again
-		calcule log_obs again
 		'''
 		assert len(self)==len(values)
 		new_obs = self.obs+values
@@ -131,8 +120,6 @@ class SubLCO():
 		if recalculate:
 			if hasattr(self, 'd_obs'):
 				self.set_diff('obs')
-			if hasattr(self, 'log_obs'):
-				self.set_log('obs')
 
 	def add_obs_noise_gaussian(self, obs_min_lim:float,
 		std_scale:float=C_.OBSE_STD_SCALE,
@@ -172,16 +159,6 @@ class SubLCO():
 		'''
 		diffv = self.get_diff(attr)
 		setattr(self, f'd_{attr}', diffv)
-
-	def get_log(self, attr:str):
-		return log_vector(getattr(self, attr))
-
-	def set_log(self, attr:str):
-		'''
-		Calculate a lof version from an attr and create a new attr with new name
-		'''
-		logv = self.get_log(attr)
-		setattr(self, f'log_{attr}', logv)
 
 	def apply_valid_indexs_to_attrs(self, valid_indexs,
 		recalculate:bool=True,
@@ -497,16 +474,6 @@ class LCO():
 		'''
 		for b in self.bands:
 			self.set_diff_b(b, attr)
-
-	def set_log_b(self, b:str, attr:str):
-		self.get_b(b).set_log(attr) 
-
-	def set_log_parallel(self, attr:str):
-		'''
-		Along all bands
-		'''
-		for b in self.bands:
-			self.set_log_b(b, attr)
 
 	def get_b(self, b:str):
 		return getattr(self, b)
