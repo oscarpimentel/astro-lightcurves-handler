@@ -88,12 +88,7 @@ class SubLCO():
 		new_days = self.days+values
 		valid_indexs = np.argsort(new_days) # must sort before the values to mantain sequenciality
 		self.days = new_days # bypass set_days() because non-sorted asumption
-		self.apply_valid_indexs_to_attrs(valid_indexs, False) # apply valid indexs to all
-
-		### calcule again as the original values changed
-		if recalculate:
-			if hasattr(self, 'd_days'): 
-				self.set_diff('days')
+		self.apply_valid_indexs_to_attrs(valid_indexs, recalculate) # apply valid indexs to all
 
 	def add_day_noise_uniform(self, hours_noise:float,
 		recalculate:bool=True,
