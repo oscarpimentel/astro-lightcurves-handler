@@ -36,7 +36,7 @@ def plot_obs_obse_scatter(lcdataset, set_names,
 			ax.plot(obse, obs, '.', c=c, markersize=markersize, alpha=alpha); ax.plot(np.nan, np.nan, '.', c=c, alpha=1, label=label)
 
 			title = f'observations & observations-error joint distribution\n'
-			title += f'survey: {lcset.survey} - band: {b}'
+			title += f'survey={lcset.survey} - band={b}'
 			ax.set_title(title)
 			ax.set_xlabel('obs-error')
 			ax.set_ylabel('obs' if kb==0 else None)

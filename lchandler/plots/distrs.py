@@ -20,7 +20,7 @@ def plot_class_distribution(lcdataset, lcset_names,
 	lcobj_classes = lcset.get_lcobj_classes()
 	pop_dict = {lcset_name:lcdataset[lcset_name].get_lcobj_classes() for lcset_name in lcset_names}
 	title = 'class population distributions\n'
-	title += f'survey: {lcset.survey}'
+	title += f'survey={lcset.survey}'
 	plt_kwargs = {
 		#'ylabel':'' if ks>0 else None,
 		'title':title,
@@ -52,7 +52,7 @@ def plot_values_distribution(lcdataset, set_name:str, attr:str,
 			plot_dict = {c:lcset.get_lcset_values_b(b, attr, c)*100}
 			plot_df = pd.DataFrame.from_dict(plot_dict, orient='columns')
 			title = f'{C_.LONG_NAME_DICT[attr]} distribution {C_.SYMBOLS_DICT[attr]}\n'
-			title += f'survey: {lcset.survey} - set: {set_name.replace("_", "-")} - band: {b}'
+			title += f'survey={lcset.survey} - set={set_name.replace("_", "-")} - band={b}'
 			kwargs = {
 				'fig':fig,
 				'ax':ax,
