@@ -2,6 +2,7 @@ from __future__ import print_function
 from __future__ import division
 from . import C_
 
+from numba import jit
 import numpy as np
 import random
 import copy
@@ -9,19 +10,25 @@ from scipy.stats import t
 
 ###################################################################################################################################################
 
+@jit(nopython=True)
+def argsort(x):
+	return np.argsort(x)
+
+@jit(nopython=True)
 def diff_vector(x:np.ndarray,
 	uses_prepend=True,
 	):
+	'''
+	x: (l)
+	'''
 	if len(x)==0:
 		return x
-	x = x[...,None]
 	if uses_prepend:
-		to_append = np.expand_dims(x[0,...], axis=1)
-		dx = np.diff(x, axis=0, prepend=to_append.T)
-		return dx[:,0]
+		x0 = np.expand_dims(np.array(x[0]), axis=0)
+		nx = np.concatenate((x0, x), axis=0)
+		return nx[1:] - nx[:-1]
 	else:
-		dx = np.diff(x, axis=0)
-		return dx[:,0]
+		return x[1:] - x[:-1]
 
 def get_obs_noise_gaussian(obs, obse, obs_min_lim,
 	std_scale:float=C_.OBSE_STD_SCALE,
@@ -29,9 +36,6 @@ def get_obs_noise_gaussian(obs, obse, obs_min_lim,
 	):
 	if mode=='norm':
 		obs_values = np.clip(np.random.normal(obs, obse*std_scale), obs_min_lim, None)
-	elif mode=='t':
-		t_rvs = t.rvs(5, obs, obse*std_scale)
-		obs_values = np.clip(t_rvs, obs_min_lim, None)
 	else:
 		raise Exception(f'no mode {mode}')
 	return obs_values
@@ -86,7 +90,7 @@ class SubLCO():
 		'''
 		assert len(self)==len(values)
 		new_days = self.days+values
-		valid_indexs = np.argsort(new_days) # must sort before the values to mantain sequenciality
+		valid_indexs = argsort(new_days) # must sort before the values to mantain sequenciality
 		self.days = new_days # bypass set_days() because non-sorted asumption
 		self.apply_valid_indexs_to_attrs(valid_indexs, recalculate) # apply valid indexs to all
 
@@ -406,7 +410,7 @@ class LCO():
 	def get_sorted_days_indexs_serial(self):
 		values = [self.get_b(b).days for b in self.bands]
 		all_days = np.concatenate(values, axis=0)
-		sorted_days_indexs = np.argsort(all_days)
+		sorted_days_indexs = argsort(all_days)
 		return sorted_days_indexs
 
 	def get_onehot_serial(self,
