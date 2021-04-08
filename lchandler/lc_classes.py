@@ -3,12 +3,20 @@ from __future__ import division
 from . import C_
 
 from numba import jit
+from numba.typed import List
 import numpy as np
 import random
 import copy
 from scipy.stats import t
 
 ###################################################################################################################################################
+
+@jit(nopython=True)
+def numba_cat(values, axis):
+	return np.concatenate(values, axis)
+
+def concatenate(values, axis=0):
+	return numba_cat(tuple(values), axis)
 
 @jit(nopython=True)
 def argsort(x):
@@ -219,7 +227,7 @@ class SubLCO():
 
 	def get_custom_x(self, attrs:list):
 		values = [self.get_attr(attr)[...,None] for attr in attrs]
-		x = np.concatenate(values, axis=-1)
+		x = concatenate(values, axis=-1)
 		return x
 
 	def get_first_day(self):
@@ -409,7 +417,7 @@ class LCO():
 
 	def get_sorted_days_indexs_serial(self):
 		values = [self.get_b(b).days for b in self.bands]
-		all_days = np.concatenate(values, axis=0)
+		all_days = concatenate(values, axis=0)
 		sorted_days_indexs = argsort(all_days)
 		return sorted_days_indexs
 
@@ -444,7 +452,7 @@ class LCO():
 		max_day:float=np.infty,
 		):
 		values = [self.get_b(b).get_custom_x(attrs) for b in self.bands]
-		x = np.concatenate(values, axis=0)
+		x = concatenate(values, axis=0)
 		sorted_days_indexs = self.get_sorted_days_indexs_serial() if sorted_days_indexs is None else sorted_days_indexs
 		x = x[sorted_days_indexs]
 
@@ -465,7 +473,7 @@ class LCO():
 		'''
 		Duration in days of complete light curve
 		'''
-		days = np.concatenate([self.get_b(b).days for b in self.bands])
+		days = concatenate([self.get_b(b).days for b in self.bands], axis=0)
 		return max(days)-min(days)
 
 	def set_diff_b(self, b:str, attr:str):
