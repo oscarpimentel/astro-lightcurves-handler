@@ -3,7 +3,6 @@ from __future__ import division
 from . import C_
 
 from numba import jit
-from numba.typed import List
 import numpy as np
 import random
 import copy
