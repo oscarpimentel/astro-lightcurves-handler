@@ -166,6 +166,18 @@ class LCSet():
 	def __getitem__(self, lcobj_name):
 		return self.data[lcobj_name]
 
+	def get_copy(self, lcobj_name):
+		return self.data[lcobj_name].copy()
+
+	def get_info(self):
+		return {
+			'survey':self.survey,
+			'description':self.description,
+			'band_names':self.band_names,
+			'class_names':self.class_names,
+			'obs_is_flux':self.obs_is_flux,
+		}
+
 	def get_lcobj_names(self,
 		c=None,
 		):
