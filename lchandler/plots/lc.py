@@ -52,7 +52,7 @@ def plot_lightcurve(ax, lcobj, b,
 	
 	ax.plot(new_days, obs, ':', color=color, alpha=0.25*alpha)
 	label = f'{label} [synth]' if is_synthetic and not label is None else label
-	label = f'{label} ({len(obs):,})' if show_obs_len else label
+	label = f'{label} ({len(obs):,}#)' if show_obs_len else label
 	ax.plot(new_days, obs, 'o', color=color, label=label, alpha=alpha, markeredgecolor='k' if is_synthetic else None)
 
 	x_margins = get_margin(new_days, x_margin_offset_percent)
