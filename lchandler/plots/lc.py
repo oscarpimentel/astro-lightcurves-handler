@@ -5,6 +5,7 @@ from . import C_
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+from flamingchoripan.strings import get_string_from_dict
 
 ###################################################################################################################################################
 
@@ -16,10 +17,8 @@ def get_margin(x, x_per):
 	abs_x = abs(min_x - max_x)
 	return [min_x-abs_x*x_per/100., max_x+abs_x*x_per/100.]
 
-def plot_lightcurve(ax, lcobj, b,
+def plot_lightcurve(ax, lcobj, b, label,
 	max_day:float=np.infty,
-
-	label:str=None,
 	alpha:float=1,
 	mode:str='bar', # shadow, bar, gauss
 	capsize:int=0,
@@ -27,7 +26,8 @@ def plot_lightcurve(ax, lcobj, b,
 	y_margin_offset_percent:float=10,
 	std_factor:int=C_.PLOT_OBSE_STD_SCALE, # asuming error as gaussian error
 	percentile_bar:float=C_.PLOT_PERCENTILE_BAR, # show bars as percentile bound
-	show_obs_len=True,
+	label_snr=True,
+	label_len=True,
 	):
 	'''
 	plot a light curve!!
@@ -51,9 +51,13 @@ def plot_lightcurve(ax, lcobj, b,
 		raise Exception(f'not supported mode: {mode}')
 	
 	ax.plot(new_days, obs, ':', color=color, alpha=0.25*alpha)
-	label = f'{label} [synth]' if is_synthetic and not label is None else label
-	label = f'{label} ({len(obs):,}#)' if show_obs_len else label
-	ax.plot(new_days, obs, 'o', color=color, label=label, alpha=alpha, markeredgecolor='k' if is_synthetic else None)
+	_label = f'{label} [synth]' if is_synthetic and not label is None else label
+	d = {
+		'snr':f'{lcobjb.get_snr():.3f}' if label_snr else None,
+		'n':f'{len(obs):,}#' if label_len else None,
+	}
+	_label += f' ({get_string_from_dict(d, key_key_separator=" - ")})'
+	ax.plot(new_days, obs, 'o', color=color, label=_label, alpha=alpha, markeredgecolor='k' if is_synthetic else None)
 
 	x_margins = get_margin(new_days, x_margin_offset_percent)
 	y_margins = get_margin(obs, y_margin_offset_percent)
