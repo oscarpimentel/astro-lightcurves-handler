@@ -61,11 +61,11 @@ class LCDataset():
 	def clean_empty_obs_keys(self):
 		'''
 		Along all lcsets
-		Use this to delete empty light curves: 0 obs in all bands
+		Use this to delete empty light curves=0 obs in all bands
 		'''
 		for lcset_name in self.get_lcset_names():
 			deleted_keys = self[lcset_name].clean_empty_obs_keys(verbose=0)
-			print(f'({lcset_name}) deleted keys: {deleted_keys}')
+			print(f'({lcset_name}) deleted keys={deleted_keys}')
 
 	def split(self, to_split_lcset_name, new_sets_props,
 		kfolds=3,
@@ -98,24 +98,24 @@ class LCDataset():
 		printClass = ShowPrints if verbose else HiddenPrints
 		with printClass():
 			lcset = self.set_lcset(new_lcset_name, self[lcset_name].copy())
-			print(f'survey: {lcset.survey} - after processing: {lcset_name} (>{new_lcset_name})')
+			print(f'survey={lcset.survey} - after processing={lcset_name} (>{new_lcset_name})')
 			total_deleted_points = {b:0 for b in lcset.band_names}
 			for k in range(sigma_n):
-				print(f'k: {k}')
+				print(f'k={k}')
 				for b in lcset.band_names:
 					sigma_values = lcset.get_lcset_values_b(b, 'obse')
 					sigma_samples = len(sigma_values)
 					mean = np.mean(sigma_values)
 					sigma = np.std(sigma_values)
 					deleted_points = search_over_sigma_samples(lcset, b, mean, sigma, sigma_m, apply_lower_bound)
-					print(f'\tband: {b} - sigma_samples: {sigma_samples:,} - mean: {mean} - std: {sigma}')
-					print(f'\tdeleted_points: {deleted_points:,}')
+					print(f'\tband={b} - sigma_samples={sigma_samples:,} - mean={mean} - std={sigma}')
+					print(f'\tdeleted_points={deleted_points:,}')
 					total_deleted_points[b] += deleted_points
 		
 			lcset.clean_empty_obs_keys()
 			lcset.reset_day_offset_serial()
 			sigma_samples = len(lcset.get_lcset_values_b(b, 'obse'))
-			print(f'sigma_samples: {sigma_samples:,} - total_deleted_points: {total_deleted_points}')
+			print(f'sigma_samples={sigma_samples:,} - total_deleted_points={total_deleted_points}')
 
 		if remove_old_lcset:
 			self.del_lcset(lcset_name)
@@ -170,13 +170,14 @@ class LCSet():
 		return self.data[lcobj_name].copy()
 
 	def get_info(self):
-		return {
+		info = {
 			'survey':self.survey,
 			'description':self.description,
 			'band_names':self.band_names,
 			'class_names':self.class_names,
 			'obs_is_flux':self.obs_is_flux,
 		}
+		return info
 
 	def get_lcobj_names(self,
 		c=None,
@@ -200,7 +201,7 @@ class LCSet():
 		deleted_lcobjs = len(to_delete_lcobj_names)
 
 		if verbose:
-			print(f'deleted lcobjs: {deleted_lcobjs}')
+			print(f'deleted lcobjs={deleted_lcobjs}')
 
 		for lcobj_name in to_delete_lcobj_names:
 			self.data.pop(lcobj_name, None)
@@ -366,7 +367,7 @@ class LCSet():
 		lengths = sum([df[f'{c}-$L$'].values[0] for c in self.class_names])
 		durations = sum([df[f'{c}-$\Delta T$'].values[0] for c in self.class_names])
 		cadences = sum([df[f'{c}-$\Delta t$'].values[0] for c in self.class_names])
-		txt = f'({b}) obs_samples: {lengths.sum():,} - min_len: {lengths.min()} - max_dur: {durations.max():.1f}[days] - dur(p50): {durations.p50:.1f}[days] - cadence(p50): {cadences.p50:.1f}[days]\n'
+		txt = f'({b}) obs_samples={lengths.sum():,} - min_len={lengths.min()} - max_dur={durations.max():.1f}[days] - dur(p50)={durations.p50:.1f}[days] - cadence(p50)={cadences.p50:.1f}[days]\n'
 		return txt
 
 	def __repr_serial(self):
@@ -374,7 +375,7 @@ class LCSet():
 		lengths = sum([df[f'{c}-$L$'].values[0] for c in self.class_names])
 		durations = sum([df[f'{c}-$\Delta T$'].values[0] for c in self.class_names])
 		cadences = sum([df[f'{c}-$\Delta t$'].values[0] for c in self.class_names])
-		txt = f'(.) obs_samples: {lengths.sum():,} - min_len: {lengths.min()} - max_dur: {durations.max():.1f}[days] - dur(p50): {durations.p50:.1f}[days] - cadence(p50): {cadences.p50:.1f}[days]\n'
+		txt = f'(.) obs_samples={lengths.sum():,} - min_len={lengths.min()} - max_dur={durations.max():.1f}[days] - dur(p50)={durations.p50:.1f}[days] - cadence(p50)={cadences.p50:.1f}[days]\n'
 		return txt
 
 	def __repr__(self):
