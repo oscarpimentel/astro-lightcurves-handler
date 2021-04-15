@@ -5,44 +5,17 @@ from . import C_
 from numba import jit
 import numpy as np
 import random
-import copy
 from scipy.stats import t
+import flamingchoripan.numba as fcnumba
 
 ###################################################################################################################################################
-
-@jit(nopython=True)
-def numba_cat(values, axis):
-	return np.concatenate(values, axis)
-
-def concatenate(values, axis=0):
-	return numba_cat(tuple(values), axis)
-
-@jit(nopython=True)
-def argsort(x):
-	return np.argsort(x)
-
-@jit(nopython=True)
-def diff_vector(x:np.ndarray,
-	uses_prepend=True,
-	):
-	'''
-	x: (l)
-	'''
-	if len(x)==0:
-		return x
-	if uses_prepend:
-		x0 = np.expand_dims(np.array(x[0]), axis=0)
-		nx = np.concatenate((x0, x), axis=0)
-		return nx[1:] - nx[:-1]
-	else:
-		return x[1:] - x[:-1]
 
 def get_obs_noise_gaussian(obs, obse, obs_min_lim,
 	std_scale:float=C_.OBSE_STD_SCALE,
 	mode='norm',
 	):
 	if mode=='norm':
-		obs_values = np.clip(np.random.normal(obs, obse*std_scale), obs_min_lim, None)
+		obs_values = np.clip(fcnumba.normal(obs, obse*std_scale), obs_min_lim, None)
 	else:
 		raise Exception(f'no mode {mode}')
 	return obs_values
@@ -73,7 +46,7 @@ class SubLCO():
 
 	def set_days(self, days):
 		assert len(days.shape)==1
-		assert np.all((diff_vector(days, uses_prepend=False)>0)) # check if days are in order
+		assert np.all((fcnumba.diff_vector(days, uses_prepend=False)>0)) # check if days are in order
 		self.days = days
 
 	def set_obs(self, obs):
@@ -97,7 +70,7 @@ class SubLCO():
 		'''
 		assert len(self)==len(values)
 		new_days = self.days+values
-		valid_indexs = argsort(new_days) # must sort before the values to mantain sequenciality
+		valid_indexs = fcnumba.argsort(new_days) # must sort before the values to mantain sequenciality
 		self.days = new_days # bypass set_days() because non-sorted asumption
 		self.apply_valid_indexs_to_attrs(valid_indexs, recalculate) # apply valid indexs to all
 
@@ -109,7 +82,7 @@ class SubLCO():
 		'''
 		if hours_noise==0:
 			return
-		hours_noise = np.random.uniform(-hours_noise, hours_noise, size=len(self))
+		hours_noise = fcnumba.uniform(-hours_noise, hours_noise, len(self))
 		self.add_day_values(hours_noise/24., recalculate)
 
 	def add_obs_values(self, values,
@@ -160,7 +133,7 @@ class SubLCO():
 		if random.random()<=apply_prob:
 			return
 
-		valid_mask = np.random.binomial(p=1-ds_prob, size=len(self), n=1).astype(bool)
+		valid_mask = fcnumba.bernoulli(1-ds_prob, len(self))
 		if valid_mask.sum()<min_valid_length: # extra case. If by change the mask implies a very short curve
 			valid_mask = np.zeros((len(self)), dtype=np.bool)
 			valid_mask[:min_valid_length] = True
@@ -197,7 +170,7 @@ class SubLCO():
 		return
 
 	def get_diff(self, attr:str):
-		return diff_vector(getattr(self, attr))
+		return fcnumba.diff_vector(getattr(self, attr))
 
 	def set_diff(self, attr:str):
 		'''
@@ -264,7 +237,7 @@ class SubLCO():
 
 	def get_custom_x(self, attrs:list):
 		values = [self.get_attr(attr)[...,None] for attr in attrs]
-		x = concatenate(values, axis=-1)
+		x = fcnumba.concatenate(values, axis=-1)
 		return x
 
 	def get_first_day(self):
@@ -281,9 +254,9 @@ class SubLCO():
 
 	def copy(self):
 		new_sublco = SubLCO(
-			self.days.copy(),
-			self.obs.copy(),
-			self.obse.copy(),
+			fcnumba.copy(self.days),
+			fcnumba.copy(self.obs),
+			fcnumba.copy(self.obse),
 			self.y,
 			self.synthetic,
 			)
@@ -292,7 +265,7 @@ class SubLCO():
 				continue
 			v = self.__dict__[key]
 			if isinstance(v, np.ndarray):
-				setattr(new_sublco, key, v.copy())
+				setattr(new_sublco, key, fcnumba.copy(v))
 		return new_sublco
 
 	def synthetic_copy(self):
@@ -330,7 +303,7 @@ class SubLCO():
 				new_obs.append(np.mean(self.obs[ddict[k]]))
 				new_obse.append(np.mean(self.obse[ddict[k]]))
 			elif mode=='min_obse':
-				i = np.argmin(self.obse[ddict[k]])
+				i = fcnumba.argmin(self.obse[ddict[k]])
 				new_days.append(self.days[ddict[k]][i])
 				new_obs.append(self.obs[ddict[k]][i])
 				new_obse.append(self.obse[ddict[k]][i])
@@ -439,10 +412,10 @@ class LCO():
 		'''
 		delete day offset acording to the first day along any day!
 		'''
-		first_days = [self.get_b(b).get_first_day() for b in self.bands if len(self.get_b(b))>0]
+		first_days = np.array([self.get_b(b).get_first_day() for b in self.bands if len(self.get_b(b))>0])
 		if len(first_days)==0:
 			return # do nothing
-		day_offset = min(first_days) # select the min along all bands
+		day_offset = fcnumba.min(first_days) # select the min along all bands
 		for b in self.bands:
 			self.get_b(b).days -= day_offset
 		if store_day_offset:
@@ -454,8 +427,8 @@ class LCO():
 
 	def get_sorted_days_indexs_serial(self):
 		values = [self.get_b(b).days for b in self.bands]
-		all_days = concatenate(values, axis=0)
-		sorted_days_indexs = argsort(all_days)
+		all_days = fcnumba.concatenate(values, axis=0)
+		sorted_days_indexs = fcnumba.argsort(all_days)
 		return sorted_days_indexs
 
 	def get_onehot_serial(self,
@@ -466,7 +439,7 @@ class LCO():
 		index = 0
 		for kb,b in enumerate(self.bands):
 			l = len(getattr(self, b))
-			onehot[index:index+l,kb] = 1.
+			onehot[index:index+l,kb] = True
 			index += l
 		sorted_days_indexs = self.get_sorted_days_indexs_serial() if sorted_days_indexs is None else sorted_days_indexs
 		onehot = onehot[sorted_days_indexs]
@@ -489,7 +462,7 @@ class LCO():
 		max_day:float=np.infty,
 		):
 		values = [self.get_b(b).get_custom_x(attrs) for b in self.bands]
-		x = concatenate(values, axis=0)
+		x = fcnumba.concatenate(values, axis=0)
 		sorted_days_indexs = self.get_sorted_days_indexs_serial() if sorted_days_indexs is None else sorted_days_indexs
 		x = x[sorted_days_indexs]
 
@@ -510,8 +483,8 @@ class LCO():
 		'''
 		Duration in days of complete light curve
 		'''
-		days = concatenate([self.get_b(b).days for b in self.bands], axis=0)
-		return max(days)-min(days)
+		days = fcnumba.concatenate([self.get_b(b).days for b in self.bands], axis=0)
+		return fcnumba.max(days)-fcnumba.min(days)
 
 	def set_diff_b(self, b:str, attr:str):
 		self.get_b(b).set_diff(attr) 
@@ -560,4 +533,4 @@ class LCO():
 			self.get_b(b).clean_small_cadence(dt, mode)
 
 	def get_snr(self):
-		return max([self.get_b(b).get_snr() for b in self.bands])
+		return fcnumba.max(np.array([self.get_b(b).get_snr() for b in self.bands]))
