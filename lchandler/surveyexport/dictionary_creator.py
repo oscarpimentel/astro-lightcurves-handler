@@ -53,18 +53,18 @@ class LightCurveDictionaryCreator():
 	def generate_label_to_class_dict(self):
 		labels_names = list(set(self.raw_labels_df[self.df_index_names['label']].values))
 		label_to_class_dict = {k:k for k in labels_names}
-		#print(f'label_to_class_dict: {label_to_class_dict}')
+		#print(f'label_to_class_dict={label_to_class_dict}')
 		return label_to_class_dict
 
 	def generate_class_to_label_dict(self, label_to_class_dict):
 		class_to_label_dict = {label_to_class_dict[k]:k for k in label_to_class_dict.keys()}
-		#print('label_to_class_dict:', '\n\t'+'\n\t'.join([f'{k}: {label_to_class_dict[k]}' for k in label_to_class_dict.keys()]))
-		#print('class_to_label_dict:', '\n\t'+'\n\t'.join([f'{k}: {class_to_label_dict[k]}' for k in class_to_label_dict.keys()]))
+		#print('label_to_class_dict:', '\n\t'+'\n\t'.join([f'{k}={label_to_class_dict[k]}' for k in label_to_class_dict.keys()]))
+		#print('class_to_label_dict:', '\n\t'+'\n\t'.join([f'{k}={class_to_label_dict[k]}' for k in class_to_label_dict.keys()]))
 		return class_to_label_dict
 
 	def get_classes_from_df(self):
 		labels_names, counts = np.unique(self.labels_df[self.df_index_names['label']].values, return_counts=True)
-		#print(f'labels_names: {labels_names} - counts: {counts}')
+		#print(f'labels_names={labels_names} - counts={counts}')
 		class_names = [self.label_to_class_dict.get(label, label) for label in labels_names]
 		return class_names, labels_names, len(class_names)
 
@@ -93,7 +93,7 @@ class LightCurveDictionaryCreator():
 		for to_merge_classes_key in merge_classes_dict.keys():
 			self.label_to_class_dict.update({to_merge_classes_key:to_merge_classes_key})
 			self.class_to_label_dict.update({to_merge_classes_key:to_merge_classes_key})
-			#print(f'to_merge_classes_key: {to_merge_classes_key}')
+			#print(f'to_merge_classes_key={to_merge_classes_key}')
 			class_fusion_list = merge_classes_dict[to_merge_classes_key]
 			labels_fusion_list = [self.class_to_label_dict[k] for k in class_fusion_list]
 			for label_fusion in labels_fusion_list:
@@ -121,7 +121,7 @@ class LightCurveDictionaryCreator():
 	def get_dict_name(self, name_parameters:dict):
 		name = ''
 		for k in name_parameters.keys():
-			name += f'{k}={name_parameters[k]}°'
+			name += f'{k}={name_parameters[k]}~'
 		return name[:-1]
 
 	def get_label(self, labels_df:pd.DataFrame, lcobj_name:str, easy_label_dict:dict):
@@ -166,24 +166,24 @@ class LightCurveDictionaryCreator():
 
 		### separate bands for optimal
 		band_names = list(self.band_dictionary.keys()) if band_names is None else band_names
-		print(f'band_names: {band_names}')
+		print(f'band_names={band_names}')
 
 		### clean dataframe to speed up thing in the objects search
 		detections_df = self.detections_df.reset_index()
-		print(f'cleaning the DataFrame - samples: {len(detections_df):,}')
+		print(f'cleaning the DataFrame - samples={len(detections_df):,}')
 		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
 
 		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
 		detections_df = detections_ddf.loc[detections_ddf[self.df_index_names['band']].isin([self.band_dictionary[b] for b in band_names])].compute()
-		print(f'remove_invalid_bands > samples: {len(detections_df):,}')
+		print(f'remove_invalid_bands > samples={len(detections_df):,}')
 
 		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
 		detections_df = detections_ddf.loc[detections_ddf[self.df_index_names['oid']].isin(list(set(self.labels_df.index)))].compute()
-		print(f'remove_invalid_classes > samples: {len(detections_df):,}')
+		print(f'remove_invalid_classes > samples={len(detections_df):,}')
 
 		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
 		detections_df = detections_ddf.loc[detections_ddf[self.df_index_names['obs']]>0].compute()
-		print(f'remove_negative_obs > samples: {len(detections_df):,}')
+		print(f'remove_negative_obs > samples={len(detections_df):,}')
 		detections_df = detections_df.set_index(self.df_index_names['oid'])
 
 		### prepare dataset
@@ -207,12 +207,12 @@ class LightCurveDictionaryCreator():
 		}
 		filename_parameters.update(filename_extra_parameters)
 		save_filedir = f'{save_folder}/{self.get_dict_name(filename_parameters)}.{C_.EXT_RAW_LIGHTCURVE}'
-		print(f'save_filedir: {save_filedir}')
+		print(f'save_filedir={save_filedir}')
 
 		### easy variables
 		outliers = [] if outliers_df is None else list(outliers_df['outliers'].values) 
 		easy_label_dict = {self.class_to_label_dict[c]:kc for kc,c in enumerate(self.class_names)}
-		print(f'easy_label_dict: {easy_label_dict}')
+		print(f'easy_label_dict={easy_label_dict}')
 
 		# start loop
 		correct_samples = 0
@@ -253,7 +253,7 @@ class LightCurveDictionaryCreator():
 				else:
 					pass
 					#print(lcobj_name)
-				bar(f'obj: {lcobj_name} - y: {y} - c: {self.class_names[y]} - lengths_bdict: {lcobj.get_length_bdict()} - correct_samples (any-band>={any_band_points}): {correct_samples:,}')
+				bar(f'obj={lcobj_name} - y={y} - c={self.class_names[y]} - lengths_bdict={lcobj.get_length_bdict()} - correct_samples (any-band>={any_band_points})={correct_samples:,}')
 					
 			except KeyboardInterrupt:
 				bar.done()
