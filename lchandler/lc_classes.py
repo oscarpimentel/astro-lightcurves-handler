@@ -10,6 +10,11 @@ import flamingchoripan.numba as fcnumba
 
 ###################################################################################################################################################
 
+def diff_vector(x:np.ndarray,
+	uses_prepend=True,
+	):
+	return fcnumba.diff_vector(x, uses_prepend)
+
 def get_obs_noise_gaussian(obs, obse, obs_min_lim,
 	std_scale:float=C_.OBSE_STD_SCALE,
 	mode='norm',
@@ -46,7 +51,7 @@ class SubLCO():
 
 	def set_days(self, days):
 		assert len(days.shape)==1
-		assert np.all((fcnumba.diff_vector(days, uses_prepend=False)>0)) # check if days are in order
+		assert np.all((diff_vector(days, uses_prepend=False)>0)) # check if days are in order
 		self.days = days
 
 	def set_obs(self, obs):
@@ -170,7 +175,7 @@ class SubLCO():
 		return
 
 	def get_diff(self, attr:str):
-		return fcnumba.diff_vector(getattr(self, attr))
+		return diff_vector(getattr(self, attr))
 
 	def set_diff(self, attr:str):
 		'''
