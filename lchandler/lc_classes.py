@@ -142,23 +142,59 @@ class SubLCO():
 		assert np.all(self.obs>=obs_min_lim)
 		obs_values = get_obs_noise_gaussian(self.obs, self.obse, obs_min_lim, std_scale, mode)
 		self.add_obs_values(obs_values-self.obs, recalculate)
+		return
 
 	def apply_downsampling(self, ds_prob,
+		apply_prob=1,
 		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		recalculate:bool=True,
 		):
 		assert ds_prob>=0 and ds_prob<=1
-		if len(self)<=min_valid_length or ds_prob==0:
+		assert apply_prob>=0 and apply_prob<=1
+		if ds_prob==0:
+			return
+		if apply_prob==0:
+			return
+		if len(self)<=min_valid_length:
+			return
+		if random.random()<=apply_prob:
 			return
 
-		valid_mask = np.random.uniform(0, 1, len(self))>ds_prob
-		if valid_mask.sum()<min_valid_length:
-			valid_mask = valid_mask*0
-			valid_mask[:min_valid_length] = 1
-			valid_mask = np.random.permutation(valid_mask.astype(bool))
+		valid_mask = np.random.binomial(p=1-ds_prob, size=len(self), n=1).astype(bool)
+		if valid_mask.sum()<min_valid_length: # extra case. If by change the mask implies a very short curve
+			valid_mask = np.zeros((len(self)), dtype=np.bool)
+			valid_mask[:min_valid_length] = True
+			valid_mask = np.random.permutation(valid_mask)
 
 		### calcule again as the original values changed
 		self.apply_valid_indexs_to_attrs(valid_mask, recalculate)
+		return
+
+	def apply_downsampling_window(self,
+		rooted=False,
+		apply_prob=1,
+		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
+		recalculate:bool=True,
+		):
+		assert apply_prob>=0 and apply_prob<=1
+		if apply_prob==0:
+			return
+		if len(self)<=min_valid_length:
+			return
+		if random.random()<=apply_prob:
+			return
+
+		new_length = random.randint(min_valid_length, len(self)) # [a,b]
+		valid_mask = np.zeros((len(self)), dtype=np.bool)
+		if rooted:
+			valid_mask[:new_length] = True
+		else:
+			index = random.randint(0, len(self)-new_length) # [a,b]
+			valid_mask[index:index+new_length] = True
+
+		### calcule again as the original values changed
+		self.apply_valid_indexs_to_attrs(valid_mask, recalculate)
+		return
 
 	def get_diff(self, attr:str):
 		return diff_vector(getattr(self, attr))
@@ -177,6 +213,7 @@ class SubLCO():
 		Be careful, this method can remove info
 		calcule d_days again
 		calcule d_obs again
+		fixme: this function is not opimized... specially due the d_days and that kind of variables
 		'''
 		original_len = len(self)
 		for key in self.__dict__.keys():
@@ -184,6 +221,7 @@ class SubLCO():
 			if isinstance(x, np.ndarray): # apply same mask to all np.ndarray in the object
 				assert original_len==len(x)
 				assert len(x.shape)==1 # 1D tensor
+				#print(key)
 				setattr(self, key, x[valid_indexs])
 
 		### calcule again as the original values changed
