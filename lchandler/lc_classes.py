@@ -129,14 +129,15 @@ class SubLCO():
 		):
 		assert ds_prob>=0 and ds_prob<=1
 		assert apply_prob>=0 and apply_prob<=1
+		success = False
 		if ds_prob==0:
-			return
+			return success
 		if apply_prob==0:
-			return
+			return success
 		if len(self)<=min_valid_length:
-			return
+			return success
 		if apply_prob<=random.random():
-			return # exit
+			return success # exit
 
 		valid_mask = fcnumba.bernoulli(1-ds_prob, len(self))
 		if valid_mask.sum()<min_valid_length: # extra case. If by change the mask implies a very short curve
@@ -146,7 +147,8 @@ class SubLCO():
 
 		### calcule again as the original values changed
 		self.apply_valid_indexs_to_attrs(valid_mask, recalculate)
-		return
+		success = True
+		return success
 
 	def apply_downsampling_window(self,
 		rooted=False,
@@ -155,12 +157,13 @@ class SubLCO():
 		recalculate:bool=True,
 		):
 		assert apply_prob>=0 and apply_prob<=1
+		success = False
 		if apply_prob==0:
-			return
+			return success
 		if len(self)<=min_valid_length:
-			return
+			return success
 		if apply_prob<=random.random():
-			return # exit
+			return success # exit
 
 		new_length = random.randint(min_valid_length, len(self)) # [a,b]
 		valid_mask = np.zeros((len(self)), dtype=np.bool)
@@ -172,7 +175,8 @@ class SubLCO():
 
 		### calcule again as the original values changed
 		self.apply_valid_indexs_to_attrs(valid_mask, recalculate)
-		return
+		success = True
+		return success
 
 	def get_diff(self, attr:str):
 		return diff_vector(getattr(self, attr))
