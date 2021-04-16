@@ -135,8 +135,8 @@ class SubLCO():
 			return
 		if len(self)<=min_valid_length:
 			return
-		if random.random()<=apply_prob:
-			return
+		if apply_prob<=random.random():
+			return # exit
 
 		valid_mask = fcnumba.bernoulli(1-ds_prob, len(self))
 		if valid_mask.sum()<min_valid_length: # extra case. If by change the mask implies a very short curve
@@ -159,8 +159,8 @@ class SubLCO():
 			return
 		if len(self)<=min_valid_length:
 			return
-		if random.random()<=apply_prob:
-			return
+		if apply_prob<=random.random():
+			return # exit
 
 		new_length = random.randint(min_valid_length, len(self)) # [a,b]
 		valid_mask = np.zeros((len(self)), dtype=np.bool)
