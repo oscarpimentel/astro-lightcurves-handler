@@ -6,6 +6,7 @@ import numpy as np
 import random
 import copy
 import flamingchoripan.datascience.statistics as fstats
+from flamingchoripan.datascience.xerror import XError
 from flamingchoripan.prints import HiddenPrints, ShowPrints
 from flamingchoripan.strings import get_bar
 from flamingchoripan.level_bars import LevelBar
@@ -301,17 +302,17 @@ class LCSet():
 		if len(lcobjs)>0:
 			xs = [lcobj.get_x_serial() for lcobj in lcobjs]
 			info_dict = {
-				f'{c}-$x$':fstats.XError(np.concatenate([x[:,C_.OBS_INDEX] for x in xs])),
-				f'{c}-$L$':fstats.XError([len(lcobj) for lcobj in lcobjs]),
-				f'{c}-$\Delta T$':fstats.XError([lcobj.get_days_serial_duration() for lcobj in lcobjs]),
-				f'{c}-$\Delta t$':fstats.XError(np.concatenate([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs])),
+				f'{c}-$x$':XError(np.concatenate([x[:,C_.OBS_INDEX] for x in xs])),
+				f'{c}-$L$':XError([len(lcobj) for lcobj in lcobjs]),
+				f'{c}-$\Delta T$':XError([lcobj.get_days_serial_duration() for lcobj in lcobjs]),
+				f'{c}-$\Delta t$':XError(np.concatenate([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs])),
 			}
 		else:
 			info_dict = {
-				f'{c}-$x$':fstats.XError([]),
-				f'{c}-$L$':fstats.XError([]),
-				f'{c}-$\Delta T$':fstats.XError([]),
-				f'{c}-$\Delta t$':fstats.XError([]),
+				f'{c}-$x$':XError([]),
+				f'{c}-$L$':XError([]),
+				f'{c}-$\Delta T$':XError([]),
+				f'{c}-$\Delta t$':XError([]),
 			}
 		return info_dict
 
@@ -333,17 +334,17 @@ class LCSet():
 		lcobjs = self.get_lcobjs(c)
 		if len(lcobjs)>0:
 			info_dict = {
-				f'{c}-$x$':fstats.XError(np.concatenate([x.get_b(b).obs for x in lcobjs])),
-				f'{c}-$L$':fstats.XError([len(x.get_b(b)) for x in lcobjs]),
-				f'{c}-$\Delta T$':fstats.XError([x.get_b(b).get_days_duration() for x in lcobjs if len(x.get_b(b))>=1]),
-				f'{c}-$\Delta t$':fstats.XError(np.concatenate([x.get_b(b).get_diff('days') for x in lcobjs])),
+				f'{c}-$x$':XError(np.concatenate([x.get_b(b).obs for x in lcobjs])),
+				f'{c}-$L$':XError([len(x.get_b(b)) for x in lcobjs]),
+				f'{c}-$\Delta T$':XError([x.get_b(b).get_days_duration() for x in lcobjs if len(x.get_b(b))>=1]),
+				f'{c}-$\Delta t$':XError(np.concatenate([x.get_b(b).get_diff('days') for x in lcobjs])),
 			}
 		else:
 			info_dict = {
-				f'{c}-$x$':fstats.XError([]),
-				f'{c}-$L$':fstats.XError([]),
-				f'{c}-$\Delta T$':fstats.XError([]),
-				f'{c}-$\Delta t$':fstats.XError([]),
+				f'{c}-$x$':XError([]),
+				f'{c}-$L$':XError([]),
+				f'{c}-$\Delta T$':XError([]),
+				f'{c}-$\Delta t$':XError([]),
 			}
 		
 		info_dict = {id(self) if index is None else index:info_dict}
