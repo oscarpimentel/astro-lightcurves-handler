@@ -35,6 +35,10 @@ class LCDataset():
 		lcsets={},
 		):
 		self.lcsets = lcsets
+		self.reset()
+
+	def reset(self):
+		self.kfolds = []
 
 	def set_lcset(self, lcset_name:str, lcset):
 		self.lcsets[lcset_name] = lcset
@@ -68,16 +72,19 @@ class LCDataset():
 			deleted_keys = self[lcset_name].clean_empty_obs_keys(verbose=0)
 			print(f'({lcset_name}) deleted keys={deleted_keys}')
 
-	def split(self, to_split_lcset_name, new_sets_props,
-		kfolds=3,
+	def split(self, to_split_lcset_name, new_sets_props, kfolds,
 		random_state=0,
-		permute=0,
+		permute=True,
 		):
+		self.kfolds = [str(kf) for kf in range(0, kfolds)]
 		to_split_lcset = self[to_split_lcset_name]
 		class_names = to_split_lcset.class_names
 		obj_names = to_split_lcset.get_lcobj_names()
 		obj_classes = [class_names[to_split_lcset[obj_name].y] for obj_name in obj_names]
-		obj_names_kdict = fstats.stratified_kfold_split(obj_names, obj_classes, class_names, new_sets_props, kfolds, random_state=random_state, permute=permute)
+		obj_names_kdict = fstats.stratified_kfold_split(obj_names, obj_classes, class_names, new_sets_props, kfolds,
+			random_state=random_state,
+			permute=permute,
+			)
 		#print(obj_names_kdict)
 
 		for new_set_name in obj_names_kdict.keys():
@@ -86,7 +93,6 @@ class LCDataset():
 			for obj_name in obj_names:
 				lcobj = to_split_lcset[obj_name].copy()
 				self[new_set_name].data.update({obj_name:lcobj})
-
 		return
 
 	def sigma_clipping(self, lcset_name, new_lcset_name,
