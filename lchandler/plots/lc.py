@@ -55,7 +55,7 @@ def plot_lightcurve(ax, lcobj, b, label,
 	synth_label = ' [synth]' if is_synthetic else ''
 	extra_label = []
 	extra_label += [f'snr={lcobjb.get_snr():.3f}'] if label_snr else []
-	extra_label += [f'{len(obs):,} #'] if label_len else []
+	extra_label += [f'{len(obs):,}#'] if label_len else []
 	extra_label = f' ({" - ".join(extra_label)})' if len(extra_label)>0 else ''
 	ax.plot(new_days, obs, 'o', color=color, label=f'{label}{synth_label}{extra_label}' if not label is None else None, alpha=alpha, markeredgecolor='k' if is_synthetic else None)
 
