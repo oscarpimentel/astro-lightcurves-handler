@@ -229,18 +229,19 @@ class LCSet():
 
 	def get_boostrap_samples(self, c, n,
 		uses_counter=True,
+		replace=False, # False True
 		):
 		lcobj_names = self.get_lcobj_names(c).copy()
 		p = None
 		if uses_counter and self.boostrap_counter_total[c]>0:
-			p = np.array([1/(self.boostrap_counter[c][lcobj_name]+1) for lcobj_name in lcobj_names])
+			p = np.array([1/(self.boostrap_counter[c][lcobj_name]+C_.EPS) for lcobj_name in lcobj_names])
 			p = p/np.sum(p)
-		_lcobj_names = np.random.choice(lcobj_names, size=n, replace=True, p=p)
+		_lcobj_names = np.random.choice(lcobj_names, size=n, replace=replace, p=p)
 
 		self.boostrap_counter_total[c] += n
 		for _lcobj_name in _lcobj_names:
 			self.boostrap_counter[c][_lcobj_name] += 1
-			
+
 		return _lcobj_names.tolist()
 
 	def get_random_lcobj_name(self):
