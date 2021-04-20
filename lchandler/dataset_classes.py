@@ -169,6 +169,18 @@ class LCSet():
 		self.band_names = band_names.copy()
 		self.class_names = class_names.copy()
 		self.obs_is_flux = obs_is_flux
+		self.reset()
+
+	def reset(self):
+		self.reset_boostrap()
+
+	def reset_boostrap(self):
+		self.boostrap_counter_total = {}
+		self.boostrap_counter = {}
+		for c in self.class_names:
+			lcobj_names = self.get_lcobj_names(c)
+			self.boostrap_counter_total[c] = 0
+			self.boostrap_counter[c] = {lcobj_name:0 for lcobj_name in lcobj_names}
 
 	def __getitem__(self, lcobj_name):
 		return self.data[lcobj_name]
@@ -214,6 +226,23 @@ class LCSet():
 			self.data.pop(lcobj_name, None)
 
 		return deleted_lcobjs
+
+	def get_boostrap_samples(self, c, n,
+		uses_counter=True,
+		):
+		lcobj_names = self.get_lcobj_names(c).copy()
+		p = None
+		if uses_counter and self.boostrap_counter_total[c]>0:
+			p = np.array([1/(self.boostrap_counter[c][lcobj_name]+1) for lcobj_name in lcobj_names])
+			p = p/np.sum(p)
+		_lcobj_names = np.random.choice(lcobj_names, size=n, replace=True, p=p)
+
+		self.boostrap_counter_total[c] += n
+		for _lcobj_name in _lcobj_names:
+			self.boostrap_counter[c][_lcobj_name] += 1
+
+		print(self.boostrap_counter[c])
+		return _lcobj_names.tolist()
 
 	def get_random_lcobj_name(self):
 		lcobj_names = self.get_lcobj_names()
