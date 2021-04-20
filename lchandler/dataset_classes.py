@@ -240,8 +240,7 @@ class LCSet():
 		self.boostrap_counter_total[c] += n
 		for _lcobj_name in _lcobj_names:
 			self.boostrap_counter[c][_lcobj_name] += 1
-
-		print(self.boostrap_counter[c])
+			
 		return _lcobj_names.tolist()
 
 	def get_random_lcobj_name(self):
