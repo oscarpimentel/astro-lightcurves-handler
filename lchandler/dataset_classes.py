@@ -229,7 +229,7 @@ class LCSet():
 
 	def get_boostrap_samples(self, c, n,
 		uses_counter=True,
-		replace=False, # False True
+		replace=True, # False True
 		):
 		lcobj_names = self.get_lcobj_names(c).copy()
 		p = None
