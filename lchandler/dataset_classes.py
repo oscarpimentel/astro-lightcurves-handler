@@ -283,7 +283,8 @@ class LCSet():
 		'''
 		Used for classes histogram
 		'''
-		return [self.class_names[y] for y in self.get_lcobj_labels()]
+		lcobj_labels =self.get_lcobj_labels()
+		return [self.class_names[y] for y in lcobj_labels]
 
 	def get_populations_cdict(self):
 		return fstats.get_populations_cdict(self.get_lcobj_classes(), self.class_names)
@@ -466,7 +467,8 @@ class LCSet():
 		return min_populated_class, min_population
 
 	def get_random_stratified_lcobj_names(self, nc):
-		return fstats.get_random_stratified_keys(self.get_lcobj_names(), self.get_lcobj_classes(), self.class_names, nc)
+		lcobj_names = self.get_lcobj_names()
+		return fstats.get_random_stratified_keys(lcobj_names, self.get_lcobj_classes(), self.class_names, nc)
 
 	def get_lcset_values_b(self, b:str, attr:str,
 		target_class:str=None,
