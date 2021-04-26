@@ -291,7 +291,8 @@ class LCSet():
 
 	def get_class_balanced_weights_cdict(self):
 		pop_cdict = self.get_populations_cdict()
-		w = {c:1/(pop_cdict[c]*len(self.class_names)) for c in self.class_names} # 1/(Nc*C)
+		k = len(self)/len(self.class_names)
+		w = {c:k/pop_cdict[c] for c in self.class_names} # 1/(Nc*C)
 		return w
 
 	def get_mean_length_df_bdict(self,
