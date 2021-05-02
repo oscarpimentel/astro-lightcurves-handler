@@ -33,11 +33,22 @@ class SubLCO():
 	'''
 	def __init__(self, days:np.ndarray, obs:np.ndarray, obs_errors:np.ndarray,
 		y:int=None,
-		synthetic=False,
 		):
 		self.set_values(days, obs, obs_errors)
 		self.y = y
-		self.synthetic = synthetic
+		self.reset()
+
+	def reset(self):
+		self.set_synthetic_mode(None)
+
+	def get_synthetic_mode(self):
+		return self.synthetic_mode
+
+	def set_synthetic_mode(self, synthetic_mode):
+		self.synthetic_mode = synthetic_mode
+
+	def is_synthetic(self):
+		return not self.synthetic_mode is None
 
 	def set_values(self, days:np.ndarray, obs:np.ndarray, obs_errors:np.ndarray):
 		'''
@@ -267,7 +278,6 @@ class SubLCO():
 			fcnumba.copy(self.obs),
 			fcnumba.copy(self.obse),
 			self.y,
-			self.synthetic,
 			)
 		for key in self.__dict__.keys():
 			if key in ['days', 'obs', 'obse']:
@@ -276,11 +286,6 @@ class SubLCO():
 			if isinstance(v, np.ndarray):
 				setattr(new_sublco, key, fcnumba.copy(v))
 		return new_sublco
-
-	def synthetic_copy(self):
-		new_obj = self.copy()
-		new_obj.synthetic = True
-		return new_obj
 
 	def __len__(self):
 		return len(self.days)
@@ -336,6 +341,23 @@ class SubLCO():
 			snr = (self.obs**2)/(self.obse**2)
 			return np.mean(snr)
 
+	def __add__(self, other):
+		if other==0 or other is None:
+			return self
+		else:
+			new_days = fcnumba.concatenate([self.days, other.days])
+			valid_indexs = fcnumba.argsort(new_days)
+			new_lco = SubLCO(
+				new_days[valid_indexs],
+				np.concatenate([self.obs, other.obs])[valid_indexs],
+				np.concatenate([self.obse, other.obse])[valid_indexs],
+				self.y,
+				)
+			return new_lco
+
+	def __radd__(self, other):
+		return self+other
+
 ###################################################################################################################################################
 
 class LCO():
@@ -356,6 +378,9 @@ class LCO():
 		self.ra = ra
 		self.dec = dec
 		self.z = z
+		self.reset()
+
+	def reset(self):
 		self.bands = []
 
 	def add_b(self, b:str, days:np.ndarray, obs:np.ndarray, obs_errors:np.ndarray):
@@ -518,16 +543,16 @@ class LCO():
 		return {b:self.get_length_b(b) for b in self.bands}
 
 	def any_synthetic(self):
-		return any([self.get_b(b).synthetic for b in self.bands])
+		return any([self.get_b(b).is_synthetic() for b in self.bands])
 
 	def all_synthetic(self):
-		return all([self.get_b(b).synthetic for b in self.bands])
+		return all([self.get_b(b).is_synthetic() for b in self.bands])
 
 	def any_real(self):
-		return any([not self.get_b(b).synthetic for b in self.bands])
+		return any([not self.get_b(b).is_synthetic() for b in self.bands])
 
 	def all_real(self):
-		return all([not self.get_b(b).synthetic for b in self.bands])
+		return all([not self.get_b(b).is_synthetic() for b in self.bands])
 
 	def any_band_eqover_length(self,
 		th_length=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
@@ -543,3 +568,4 @@ class LCO():
 
 	def get_snr(self):
 		return fcnumba.max(np.array([self.get_b(b).get_snr() for b in self.bands]))
+

@@ -33,8 +33,7 @@ def plot_lightcurve(ax, lcobj, b, label,
 	plot a light curve!!
 	bar errors asume that observation error is the scale of a gaussian distribution
 	'''
-	lcobjb = lcobj.get_b(b)
-	is_synthetic = lcobjb.synthetic
+	lcobjb = lcobj.get_b(b) if not b is None else lcobj
 	new_days = lcobjb.days
 	valid_indexs = new_days<=max_day
 	new_days = new_days[valid_indexs]
@@ -42,7 +41,7 @@ def plot_lightcurve(ax, lcobj, b, label,
 	obse = lcobjb.obse[valid_indexs]
 
 	bar = stats.norm(loc=0, scale=std_factor*obse).ppf(percentile_bar/100.) # I think It's correct, check with standar norm and p=84.1 > bar=1
-	color = C_.COLOR_DICT[b]
+	color = C_.COLOR_DICT[b] if not b is None else 'k'
 	if mode=='shadow':
 		ax.fill_between(new_days, obs-bar, obs+bar, facecolor=color, alpha=0.25)
 	elif mode=='bar':
@@ -52,12 +51,12 @@ def plot_lightcurve(ax, lcobj, b, label,
 	
 	ax.plot(new_days, obs, ':', color=color, alpha=0.25*alpha)
 
-	synth_label = ' [synth]' if is_synthetic else ''
+	synth_label = ' [synth]' if lcobjb.is_synthetic() else ''
 	extra_label = []
 	extra_label += [f'snr={lcobjb.get_snr():.3f}'] if label_snr else []
 	extra_label += [f'{len(obs):,}#'] if label_len else []
 	extra_label = f' ({" - ".join(extra_label)})' if len(extra_label)>0 else ''
-	ax.plot(new_days, obs, 'o', color=color, label=f'{label}{synth_label}{extra_label}' if not label is None else None, alpha=alpha, markeredgecolor='k' if is_synthetic else None)
+	ax.plot(new_days, obs, 'o', color=color, label=f'{label}{synth_label}{extra_label}' if not label is None else None, alpha=alpha, markeredgecolor='k' if lcobjb.is_synthetic() else None)
 
 	x_margins = get_margin(new_days, x_margin_offset_percent)
 	y_margins = get_margin(obs, y_margin_offset_percent)
