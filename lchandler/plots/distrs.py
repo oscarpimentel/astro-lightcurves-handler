@@ -19,15 +19,16 @@ def plot_class_distribution(lcdataset, lcset_names,
 	lcset = lcdataset[lcset_names[0]]
 	lcobj_classes = lcset.get_lcobj_classes()
 	pop_dict = {lcset_name:lcdataset[lcset_name].get_lcobj_classes() for lcset_name in lcset_names}
-	title = 'class population distributions\n'
-	title += f'survey={lcset.survey}'
+	title = ''
+	title += 'class population distribution'+'\n'
+	title += f'survey={lcset.survey}-{"".join(lcset.band_names)}'+'\n'
 	plt_kwargs = {
 		#'ylabel':'' if ks>0 else None,
-		'title':title,
+		'title':title[:-1],
 		#'cmap':cc.colorlist_to_cmap([cc.NICE_COLORS_DICT['nice_gray']]),
 		'uses_log_scale':uses_log_scale,
 		'figsize':figsize,
-	}
+		}
 	fig, ax = cplots.plot_hist_labels(pop_dict, lcset.class_names, **plt_kwargs)
 		
 	fig.tight_layout()
