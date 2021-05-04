@@ -338,7 +338,8 @@ class SubLCO():
 		if len(self)==0:
 			return -np.infty
 		else:
-			snr = (self.obs**2)/(self.obse**2)
+			eps = 0
+			snr = (self.obs**2)/(self.obse**2+eps)
 			return np.mean(snr)
 
 	def __add__(self, other):
