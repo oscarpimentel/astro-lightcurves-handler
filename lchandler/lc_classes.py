@@ -279,6 +279,8 @@ class SubLCO():
 			fcnumba.copy(self.obse),
 			self.y,
 			)
+		new_sublco.set_synthetic_mode(self.get_synthetic_mode())
+
 		for key in self.__dict__.keys():
 			if key in ['days', 'obs', 'obse']:
 				continue
