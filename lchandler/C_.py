@@ -66,7 +66,7 @@ LONG_NAME_DICT = {
 }
 SYMBOLS_DICT = {
 	'days':'$\{\{t_{ij}\}_j^{L_i}\}_i^N$',
-	'd_days':'$\{\{\\Delta t_{ij}\}_j^{L_i}\}_i^N$',
+	'd_days':'$\{\{\\Delta t_{ij}\}_j\\in J_i\}_{i=1}^N$',
 
 	'obs':'$\{\{x_{ij}\}_j^{L_i}\}_i^N$',
 	'log_obs':'$\{\{\log(x_{ij})\}_j^{L_i}\}_i^N$',

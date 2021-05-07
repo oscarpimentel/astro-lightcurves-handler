@@ -266,13 +266,6 @@ class LCSet():
 		for lcobj_name in self.get_lcobj_names():
 			self[lcobj_name].set_diff_parallel(attr)
 
-	def set_log_parallel(self, attr:str):
-		'''
-		Along all keys
-		'''
-		for lcobj_name in self.get_lcobj_names():
-			self[lcobj_name].set_log_parallel(attr)
-
 	def keys(self):
 		return self.__dict__.keys()
 

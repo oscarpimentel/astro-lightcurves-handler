@@ -46,7 +46,7 @@ if __name__== '__main__':
 			title = f'survey={lcset.survey}-{"".join(lcset.band_names)} - obj={lcobj_name} [{lcset.class_names[lcobj.y]}]'
 			ax.set_title(title)
 			ax.set_xlabel('time [days]')
-			ax.set_ylabel('observations [flux]')
+			ax.set_ylabel('observation [flux]')
 			ax.grid(alpha=0.5)
 			ax.legend()
 			save_filedir = f'../save/{cfilename}/{lcset_name}/{c}/{lcobj_name}.png'

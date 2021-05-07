@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import flamingchoripan.cuteplots.plots as cplots
 import flamingchoripan.cuteplots.colors as cc
+from flamingchoripan.datascience.statistics import dropout_extreme_percentiles
 import pandas as pd
 
 ###################################################################################################################################################
@@ -43,6 +44,9 @@ def plot_sigma_distribution(lcdataset, set_name:str,
 		)
 
 def plot_values_distribution(lcdataset, set_name:str, attr:str,
+	title='?',
+	xlabel='?',
+	p=0.5,
 	figsize:tuple=(15,10),
 	):
 	lcset = lcdataset[set_name]
@@ -50,18 +54,17 @@ def plot_values_distribution(lcdataset, set_name:str, attr:str,
 	for kb,b in enumerate(lcset.band_names):
 		for kc,c in enumerate(lcset.class_names):
 			ax = axes[kc,kb]
-			plot_dict = {c:lcset.get_lcset_values_b(b, attr, c)*100}
+			plot_dict = {c:dropout_extreme_percentiles(lcset.get_lcset_values_b(b, attr, c), p, mode='upper')[0]}
 			plot_df = pd.DataFrame.from_dict(plot_dict, orient='columns')
-			title = f'{C_.LONG_NAME_DICT[attr]} distribution {C_.SYMBOLS_DICT[attr]}\n'
-			title += f'survey={lcset.survey} - set={set_name.replace("_", "-")} - band={b}'
 			kwargs = {
 				'fig':fig,
 				'ax':ax,
-				'xlabel':C_.XLABEL_DICT[attr] if kc==len(lcset.class_names)-1 else None,
+				'xlabel':xlabel if kc==len(lcset.class_names)-1 else None,
 				'ylabel':'' if kb==0 else None,
-				'title':title if kc==0 else '',
-				'xlim':(None if c=='SLSN' else (0, 150)) if attr=='obs' else None,
-				'bins':100 if c=='SLSN' else 500,
+				'title':f'band={b}' if kc==0 else '',
+				#'xlim':(None if c=='SLSN' else (0, 150)) if attr=='obs' else None,
+				#'xlim':[0, 80],
+				#'bins':500,#100 if c=='SLSN' else 500,
 				'uses_density':True,
 				'legend_loc':'upper right',
 				'cmap':cc.get_cmap(cc.get_default_colorlist()[kc:])
@@ -72,6 +75,7 @@ def plot_values_distribution(lcdataset, set_name:str, attr:str,
 			ax.grid(color=C_.COLOR_DICT[b])
 			[ax.spines[border].set_color(C_.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
 			[ax.spines[border].set_linewidth(2) for border in ['bottom', 'top', 'right', 'left']]
-		
+	
+	fig.suptitle(title, va='bottom', y=.99)#, fontsize=14)
 	fig.tight_layout()
 	plt.show()
