@@ -162,7 +162,7 @@ class SubLCO():
 		return success
 
 	def apply_downsampling_window(self,
-		rooted=False,
+		rooted=False, # search window anywhere if False
 		apply_prob=1,
 		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		recalculate:bool=True,
