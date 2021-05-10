@@ -228,7 +228,7 @@ class LCSet():
 		return deleted_lcobjs
 
 	def get_boostrap_samples(self, c, n,
-		uses_counter=True,
+		uses_counter=False, # slow
 		replace=True, # False True
 		):
 		lcobj_names = self.get_lcobj_names(c).copy()
@@ -238,9 +238,10 @@ class LCSet():
 			p = p/np.sum(p)
 		_lcobj_names = np.random.choice(lcobj_names, size=n, replace=replace, p=p)
 
-		self.boostrap_counter_total[c] += n
-		for _lcobj_name in _lcobj_names:
-			self.boostrap_counter[c][_lcobj_name] += 1
+		if uses_counter:
+			self.boostrap_counter_total[c] += n
+			for _lcobj_name in _lcobj_names:
+				self.boostrap_counter[c][_lcobj_name] += 1
 
 		return _lcobj_names.tolist()
 
