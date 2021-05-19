@@ -231,12 +231,13 @@ class LCSet():
 		uses_counter=False, # slow
 		replace=True, # False True
 		):
-		lcobj_names = self.get_lcobj_names(c).copy()
-		p = None
+		lcobj_names = self.get_lcobj_names(c)
 		if uses_counter and self.boostrap_counter_total[c]>0:
 			p = np.array([1/(self.boostrap_counter[c][lcobj_name]+C_.EPS) for lcobj_name in lcobj_names])
 			p = p/np.sum(p)
-		_lcobj_names = np.random.choice(lcobj_names, size=n, replace=replace, p=p)
+			_lcobj_names = np.random.choice(lcobj_names, size=n, replace=replace, p=p)
+		else:
+			_lcobj_names = np.random.choice(lcobj_names, size=n, replace=replace)
 
 		if uses_counter:
 			self.boostrap_counter_total[c] += n
