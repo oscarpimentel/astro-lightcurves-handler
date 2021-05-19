@@ -15,6 +15,7 @@ def plot_class_distribution_df(labels_df, detections_df, label_to_class_dict, df
 	band_names:list=['g','r'],
 	add_band_lengths:bool=False,
 	rotate_xlabel:bool=False,
+	caption=None,
 	):
 	label_samples = labels_df[df_index_names['label']].values
 	to_plot = {'class samples':[label_to_class_dict[l] for l in label_samples]}
@@ -32,7 +33,7 @@ def plot_class_distribution_df(labels_df, detections_df, label_to_class_dict, df
 
 	#print(to_plot)
 	cmap = cc.colorlist_to_cmap([cc.NICE_COLORS_DICT['nice_gray']]+[C_.COLOR_DICT[b] for b in band_names])
-	title = f'class population distribution'+'\n'
+	title = f'SNe class distribution'+'\n'
 	title += f'survey={survey_name}-{"".join(band_names)} - total samples={len(label_samples):,}#'+'\n'
 	plt_kwargs = {
 		'title':title[:-1],
@@ -44,5 +45,6 @@ def plot_class_distribution_df(labels_df, detections_df, label_to_class_dict, df
 		'xlabel':'class population',
 	}
 	fig, ax = cplots.plot_hist_labels(to_plot, class_names, **plt_kwargs)
+	fig.text(.5,.0, caption, fontsize=12)
 	fig.tight_layout()
 	plt.show()

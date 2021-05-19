@@ -109,6 +109,7 @@ class LightCurveDictionaryCreator():
 		band_names:list=['g','r'],
 		add_band_lengths:bool=False,
 		rotate_xlabel:bool=False,
+		caption=None,
 		):
 		plot_class_distribution_df(self.labels_df, self.detections_df, self.label_to_class_dict, self.df_index_names, self.class_names, self.band_dictionary, self.survey_name,
 			figsize,
@@ -116,6 +117,7 @@ class LightCurveDictionaryCreator():
 			band_names,
 			add_band_lengths,
 			rotate_xlabel,
+			caption,
 		)
 
 	def get_dict_name(self, name_parameters:dict):

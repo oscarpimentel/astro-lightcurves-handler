@@ -14,6 +14,7 @@ import pandas as pd
 def plot_class_distribution(lcdataset, lcset_names,
 	figsize=None,
 	uses_log_scale=1,
+	caption=None,
 	):
 	#for ks,lcset_name in enumerate([lcset_name1, lcset_name2]):
 	#ax = axs[ks]
@@ -21,7 +22,7 @@ def plot_class_distribution(lcdataset, lcset_names,
 	lcobj_classes = lcset.get_lcobj_classes()
 	pop_dict = {lcset_name:lcdataset[lcset_name].get_lcobj_classes() for lcset_name in lcset_names}
 	title = ''
-	title += 'class population distribution'+'\n'
+	title += 'SNe class distribution'+'\n'
 	title += f'survey={lcset.survey}-{"".join(lcset.band_names)}'+'\n'
 	plt_kwargs = {
 		#'ylabel':'' if ks>0 else None,
@@ -33,6 +34,7 @@ def plot_class_distribution(lcdataset, lcset_names,
 	fig, ax = cplots.plot_hist_labels(pop_dict, lcset.class_names, **plt_kwargs)
 		
 	fig.tight_layout()
+	fig.text(.1,.1, caption)
 	plt.plot()
 
 def plot_sigma_distribution(lcdataset, set_name:str,
