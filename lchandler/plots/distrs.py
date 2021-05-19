@@ -4,9 +4,9 @@ from . import C_
 
 import numpy as np
 import matplotlib.pyplot as plt
-import flamingchoripan.cuteplots.plots as cplots
-import flamingchoripan.cuteplots.colors as cc
-from flamingchoripan.datascience.statistics import dropout_extreme_percentiles
+import fuzzytools.cuteplots.plots as cplots
+import fuzzytools.cuteplots.colors as cc
+from fuzzytools.datascience.statistics import dropout_extreme_percentiles
 import pandas as pd
 
 ###################################################################################################################################################

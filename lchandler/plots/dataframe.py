@@ -4,8 +4,8 @@ from . import C_
 
 import numpy as np
 import matplotlib.pyplot as plt
-import flamingchoripan.cuteplots.plots as cplots
-import flamingchoripan.cuteplots.colors as cc
+import fuzzytools.cuteplots.plots as cplots
+import fuzzytools.cuteplots.colors as cc
 
 ###################################################################################################################################################
 

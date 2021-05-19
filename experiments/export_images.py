@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import sys
 sys.path.append('../') # or just install the module
-sys.path.append('../../flaming-choripan') # or just install the module
+sys.path.append('../../fuzzy-tools') # or just install the module
 sys.path.append('../../astro-lightcurves-handler') # or just install the module
 
 if __name__== '__main__':
 	### parser arguments
 	import argparse
-	from flamingchoripan.prints import print_big_bar
+	from fuzzytools.prints import print_big_bar
 
 	parser = argparse.ArgumentParser('usage description')
 	parser.add_argument('-method',  type=str, default='.', help='method')
@@ -16,12 +16,12 @@ if __name__== '__main__':
 
 	###################################################################################################################################################
 	import numpy as np
-	import flamingchoripan.lists as lists
-	from flamingchoripan.files import load_pickle, save_pickle, get_dict_from_filedir
-	from flamingchoripan.cuteplots.utils import save_fig
+	import fuzzytools.lists as lists
+	from fuzzytools.files import load_pickle, save_pickle, get_dict_from_filedir
+	from fuzzytools.cuteplots.utils import save_fig
 	import matplotlib.pyplot as plt
 	from lchandler.plots.lc import plot_lightcurve
-	from flamingchoripan.files import save_time_stamp
+	from fuzzytools.files import save_time_stamp
 
 	methods = ['linear-fstw', 'bspline-fstw', 'spm-mle-fstw', 'spm-mle-estw', 'spm-mcmc-fstw', 'spm-mcmc-estw'] if main_args.method=='.' else main_args.method
 	methods = [methods] if isinstance(methods, str) else methods

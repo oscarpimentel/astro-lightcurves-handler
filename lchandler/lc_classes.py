@@ -6,7 +6,7 @@ from numba import jit
 import numpy as np
 import random
 from scipy.stats import t
-import flamingchoripan.numba as fcnumba
+import fuzzytools.numba as fcnumba
 
 ###################################################################################################################################################
 

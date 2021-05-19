@@ -5,7 +5,7 @@ from . import C_
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
-from flamingchoripan.strings import get_string_from_dict
+from fuzzytools.strings import get_string_from_dict
 
 ###################################################################################################################################################
 

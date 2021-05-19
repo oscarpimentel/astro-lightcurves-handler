@@ -5,11 +5,11 @@ from . import C_
 import numpy as np
 import random
 import copy
-import flamingchoripan.datascience.statistics as fstats
-from flamingchoripan.datascience.xerror import XError
-from flamingchoripan.prints import HiddenPrints, ShowPrints
-from flamingchoripan.strings import get_bar
-from flamingchoripan.level_bars import LevelBar
+import fuzzytools.datascience.statistics as fstats
+from fuzzytools.datascience.xerror import XError
+from fuzzytools.prints import HiddenPrints, ShowPrints
+from fuzzytools.strings import get_bar
+from fuzzytools.level_bars import LevelBar
 from .lc_classes import diff_vector
 import pandas as pd
 
