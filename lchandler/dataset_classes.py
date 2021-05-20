@@ -236,7 +236,7 @@ class LCSet():
 		if uses_counter and self.boostrap_counter_total[c]>0:
 			p = np.array([1/(self.boostrap_counter[c][lcobj_name]+C_.EPS) for lcobj_name in lcobj_names])
 			p = p/np.sum(p)
-			_lcobj_names = np.random.choice(lcobj_names, size=n, replace=True, p=p) # np.choise is slow
+			_lcobj_names = np.random.choice(lcobj_names, size=n, replace=True, p=p).tolist() # np.choise is slow
 		else:
 			_lcobj_names = get_bootstrap(lcobj_names, n)
 
@@ -245,7 +245,7 @@ class LCSet():
 			for _lcobj_name in _lcobj_names:
 				self.boostrap_counter[c][_lcobj_name] += 1
 
-		return _lcobj_names.tolist()
+		return _lcobj_names
 
 	def get_random_lcobj_name(self):
 		lcobj_names = self.get_lcobj_names()
