@@ -10,6 +10,7 @@ from fuzzytools.datascience.xerror import XError
 from fuzzytools.prints import HiddenPrints, ShowPrints
 from fuzzytools.strings import get_bar
 from fuzzytools.level_bars import LevelBar
+from fuzzytools.lists import get_bootstrap
 from .lc_classes import diff_vector
 import pandas as pd
 
@@ -235,9 +236,9 @@ class LCSet():
 		if uses_counter and self.boostrap_counter_total[c]>0:
 			p = np.array([1/(self.boostrap_counter[c][lcobj_name]+C_.EPS) for lcobj_name in lcobj_names])
 			p = p/np.sum(p)
-			_lcobj_names = np.random.choice(lcobj_names, size=n, replace=replace, p=p)
+			_lcobj_names = np.random.choice(lcobj_names, size=n, replace=True, p=p) # np.choise is slow
 		else:
-			_lcobj_names = np.random.choice(lcobj_names, size=n, replace=replace)
+			_lcobj_names = get_bootstrap(lcobj_names, n)
 
 		if uses_counter:
 			self.boostrap_counter_total[c] += n
