@@ -230,7 +230,6 @@ class LCSet():
 
 	def get_boostrap_samples(self, c, n,
 		uses_counter=False, # slow
-		replace=True, # False True
 		):
 		lcobj_names = self.get_lcobj_names(c)
 		if uses_counter and self.boostrap_counter_total[c]>0:

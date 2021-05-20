@@ -161,28 +161,43 @@ class SubLCO():
 		success = True
 		return success
 
-	def apply_downsampling_window(self,
-		rooted=False, # search window anywhere if False
-		apply_prob=1,
+	def apply_downsampling_window(self, mode_d,
 		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		recalculate:bool=True,
 		):
-		assert apply_prob>=0 and apply_prob<=1
+		keys = list(mode_d.keys())
+		mode = np.random.choice(keys, p=[mode_d[k] for k in keys])
+		#print(mode)
+		self._apply_downsampling_window(mode,
+		min_valid_length,
+		recalculate,
+		)
+
+	def _apply_downsampling_window(self, mode,
+		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
+		recalculate:bool=True,
+		):
 		success = False
-		if apply_prob==0:
-			return success
 		if len(self)<=min_valid_length:
 			return success
-		if apply_prob<=random.random():
-			return success # exit
 
-		new_length = random.randint(min_valid_length, len(self)) # [a,b]
-		valid_mask = np.zeros((len(self)), dtype=np.bool)
-		if rooted:
+		if mode=='none':
+			success = True
+			return success
+
+		elif mode=='left':
+			new_length = random.randint(min_valid_length, len(self)) # [a,b]
+			valid_mask = np.zeros((len(self)), dtype=np.bool)
 			valid_mask[:new_length] = True
-		else:
+
+		elif mode=='random':
+			new_length = random.randint(min_valid_length, len(self)) # [a,b]
+			valid_mask = np.zeros((len(self)), dtype=np.bool)
 			index = random.randint(0, len(self)-new_length) # [a,b]
 			valid_mask[index:index+new_length] = True
+
+		else:
+			raise Exception(f'no mode {mode}')
 
 		### calcule again as the original values changed
 		self.apply_valid_indexs_to_attrs(valid_mask, recalculate)
