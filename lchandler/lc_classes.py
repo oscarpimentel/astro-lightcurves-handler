@@ -7,6 +7,7 @@ import numpy as np
 import random
 from scipy.stats import t
 import fuzzytools.numba as fcnumba
+from copy import copy, deepcopy
 
 ###################################################################################################################################################
 
@@ -288,6 +289,9 @@ class SubLCO():
 		return self.__dict__.keys()
 
 	def copy(self):
+		return copy(self)
+
+	def __copy__(self):
 		new_sublco = SubLCO(
 			fcnumba.copy(self.days),
 			fcnumba.copy(self.obs),
@@ -424,6 +428,9 @@ class LCO():
 		return new_lco
 
 	def copy(self):
+		return copy(self)
+
+	def __copy__(self):
 		new_lco = LCO(
 			is_flux=self.is_flux,
 			y=self.y,
