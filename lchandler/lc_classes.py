@@ -419,7 +419,8 @@ class LCO():
 
 	def add_sublcobj_b(self, b:str, sublcobj):
 		setattr(self, b, sublcobj)
-		self.bands.append(b)
+		if not b in self.bands:
+			self.bands += [b]
 
 	def copy_only_data(self):
 		new_lco = LCO(
