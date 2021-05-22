@@ -365,14 +365,19 @@ class SubLCO():
 
 	def __add__(self, other):
 		if other==0 or other is None:
-			return self
+			return copy(self)
+		elif self==0 or self is None:
+			return copy(other)
 		else:
 			new_days = fcnumba.concatenate([self.days, other.days])
 			valid_indexs = fcnumba.argsort(new_days)
+			new_days = new_days[valid_indexs]
+			new_obs = np.concatenate([self.obs, other.obs])[valid_indexs]
+			new_obse = np.concatenate([self.obse, other.obse])[valid_indexs]
 			new_lco = SubLCO(
-				new_days[valid_indexs],
-				np.concatenate([self.obs, other.obs])[valid_indexs],
-				np.concatenate([self.obse, other.obse])[valid_indexs],
+				new_days,
+				new_obs,
+				new_obse,
 				self.y,
 				)
 			return new_lco
@@ -440,7 +445,7 @@ class LCO():
 			z=self.z,
 		)
 		for b in self.bands:
-			new_sublcobj = self.get_b(b).copy()
+			new_sublcobj = copy(self.get_b(b))
 			new_lco.add_sublcobj_b(b, new_sublcobj)
 		return new_lco
 
@@ -492,11 +497,13 @@ class LCO():
 
 	def get_onehot_serial(self,
 		sorted_days_indexs=None,
-		max_day:float=np.infty,
+		max_day=np.infty,
+		bands=None,
 		):
-		onehot = np.zeros((len(self), len(self.get_bands())), dtype=np.bool)
+		bands = self.bands if bands is None else bands
+		onehot = np.zeros((len(self), len(bands)), dtype=np.bool)
 		index = 0
-		for kb,b in enumerate(self.bands):
+		for kb,b in enumerate(bands):
 			l = len(getattr(self, b))
 			onehot[index:index+l,kb] = True
 			index += l

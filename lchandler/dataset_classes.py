@@ -13,6 +13,7 @@ from fuzzytools.level_bars import LevelBar
 from fuzzytools.lists import get_bootstrap
 from .lc_classes import diff_vector
 import pandas as pd
+from copy import copy
 
 ###################################################################################################################################################
 
@@ -149,8 +150,11 @@ class LCDataset():
 			dfs.append(df)
 		return pd.concat(dfs)
 
+	def __copy__(self):
+		return self.copy()
+
 	def copy(self):
-		lcsets = {k:self.lcsets[k].copy() for k in self.lcsets.keys()}
+		lcsets = {k:copy(self.lcsets[k]) for k in self.lcsets.keys()}
 		return LCDataset(lcsets)
 
 ###################################################################################################################################################
@@ -415,7 +419,7 @@ class LCSet():
 		'''
 		Used for obs histogram
 		'''
-		classes = [[self.class_names[self.data[key].y]]*len(self.data[key].get_b(b)) for key in self.data.keys()]
+		classes = [[self.class_names[self.data[k].y]]*len(self.data[k].get_b(b)) for k in self.data.keys()]
 		classes = sum(classes, []) # flat lists
 		return classes
 
@@ -425,12 +429,15 @@ class LCSet():
 		return {c:counts[list(uniques).index(c)]/population_dict[c] for c in self.class_names}
 
 	def get_max_length_serial(self):
-		return max([len(self.data[key]) for key in self.data.keys()])
+		return max([len(self.data[k]) for k in self.data.keys()])
+
+	def __copy__(self):
+		return self.copy()
 
 	def copy(self,
 		data:dict=None,
 		):
-		new_data = {key:self.data[key].copy() for key in self.data.keys()} if data is None else {key:data[key].copy() for key in data.keys()}
+		new_data = {k:copy(self.data[k]) for k in self.data.keys()} if data is None else {k:copy(data[k]) for k in data.keys()}
 		new_set = LCSet(
 			new_data,
 			self.survey,
