@@ -489,15 +489,16 @@ class LCO():
 			return self, day_offset
 		return self
 
-	def get_sorted_days_indexs_serial(self):
-		values = [self.get_b(b).days for b in self.bands]
+	def get_sorted_days_indexs_serial(self,
+		bands=None,
+		):
+		bands = self.bands if bands is None else bands
+		values = [self.get_b(b).days for b in bands]
 		all_days = fcnumba.concatenate(values, axis=0)
 		sorted_days_indexs = fcnumba.argsort(all_days)
 		return sorted_days_indexs
 
 	def get_onehot_serial(self,
-		sorted_days_indexs=None,
-		max_day=np.infty,
 		bands=None,
 		):
 		bands = self.bands if bands is None else bands
@@ -507,49 +508,36 @@ class LCO():
 			l = len(getattr(self, b))
 			onehot[index:index+l,kb] = True
 			index += l
-		sorted_days_indexs = self.get_sorted_days_indexs_serial() if sorted_days_indexs is None else sorted_days_indexs
+		sorted_days_indexs = self.get_sorted_days_indexs_serial(bands)
 		onehot = onehot[sorted_days_indexs]
-		
-		### clip by max day
-		if not (max_day==np.infty or max_day is None):
-			valid_indexs = self.get_days_serial() <= max_day
-			onehot = onehot[valid_indexs]
 		return onehot
 
-	def get_x_serial(self,
-		sorted_days_indexs=None,
-		max_day:float=np.infty,
-		):
-		attrs = ['days', 'obs', 'obse']
-		return self.get_custom_x_serial(attrs, sorted_days_indexs, max_day)
-
 	def get_custom_x_serial(self, attrs:list,
-		sorted_days_indexs=None,
-		max_day:float=np.infty,
+		bands=None,
 		):
-		values = [self.get_b(b).get_custom_x(attrs) for b in self.bands]
+		bands = self.bands if bands is None else bands
+		values = [self.get_b(b).get_custom_x(attrs) for b in bands]
 		x = fcnumba.concatenate(values, axis=0)
-		sorted_days_indexs = self.get_sorted_days_indexs_serial() if sorted_days_indexs is None else sorted_days_indexs
+		sorted_days_indexs = self.get_sorted_days_indexs_serial(bands)
 		x = x[sorted_days_indexs]
-
-		### clip by max day
-		if not (max_day==np.infty or max_day is None):
-			valid_indexs = self.get_days_serial() <= max_day
-			x = x[valid_indexs]
 		return x
 
 	def get_days_serial(self,
-		sorted_days_indexs=None,
+		bands,
 		):
-		return self.get_custom_x_serial(['days'], sorted_days_indexs)[:,0]
+		bands = self.bands if bands is None else bands
+		return self.get_custom_x_serial(['days'],
+			bands,
+			)[:,0]
 
 	def get_days_serial_duration(self,
-		sorted_days_indexs=None,
+		bands,
 		):
 		'''
 		Duration in days of complete light curve
 		'''
-		days = fcnumba.concatenate([self.get_b(b).days for b in self.bands], axis=0)
+		bands = self.bands if bands is None else bands
+		days = fcnumba.concatenate([self.get_b(b).days for b in bands], axis=0)
 		return fcnumba.max(days)-fcnumba.min(days)
 
 	def set_diff_b(self, b:str, attr:str):
