@@ -472,19 +472,19 @@ class LCO():
 	def reset_day_offset_serial(self,
 		store_day_offset:bool=False,
 		return_day_offset:bool=False,
+		bands=None,
 		):
 		'''
 		delete day offset acording to the first day along any day!
 		'''
-		first_days = np.array([self.get_b(b).get_first_day() for b in self.bands if len(self.get_b(b))>0])
-		if len(first_days)==0:
-			return # do nothing
-		day_offset = fcnumba.min(first_days) # select the min along all bands
-		for b in self.bands:
+		bands = self.bands if bands is None else bands
+		first_days = [self.get_b(b).get_first_day() for b in bands if len(self.get_b(b))>0]
+		assert len(first_days)>0
+		day_offset = min(first_days) # select the min along all bands
+		for b in bands:
 			self.get_b(b).days -= day_offset
 		if store_day_offset:
 			self.global_first_day = day_offset
-			
 		if return_day_offset:
 			return self, day_offset
 		return self
