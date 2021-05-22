@@ -522,8 +522,16 @@ class LCO():
 		x = x[sorted_days_indexs]
 		return x
 
+	def get_x_serial(self,
+		bands=None,
+		):
+		bands = self.bands if bands is None else bands
+		return self.get_custom_x_serial(['days', 'obs', 'obse'],
+			bands,
+			)
+
 	def get_days_serial(self,
-		bands,
+		bands=None,
 		):
 		bands = self.bands if bands is None else bands
 		return self.get_custom_x_serial(['days'],
@@ -531,7 +539,7 @@ class LCO():
 			)[:,0]
 
 	def get_days_serial_duration(self,
-		bands,
+		bands=None,
 		):
 		'''
 		Duration in days of complete light curve
