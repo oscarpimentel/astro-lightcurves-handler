@@ -370,14 +370,13 @@ class SubLCO():
 			return copy(other)
 		else:
 			new_days = fcnumba.concatenate([self.days, other.days])
+			new_obs = np.concatenate([self.obs, other.obs])
+			new_obse = np.concatenate([self.obse, other.obse])
 			valid_indexs = fcnumba.argsort(new_days)
-			new_days = new_days[valid_indexs]
-			new_obs = np.concatenate([self.obs, other.obs])[valid_indexs]
-			new_obse = np.concatenate([self.obse, other.obse])[valid_indexs]
 			new_lco = SubLCO(
-				new_days,
-				new_obs,
-				new_obse,
+				new_days[valid_indexs],
+				new_obs[valid_indexs],
+				new_obse[valid_indexs],
 				self.y,
 				)
 			return new_lco
@@ -552,11 +551,14 @@ class LCO():
 	def set_diff_b(self, b:str, attr:str):
 		self.get_b(b).set_diff(attr) 
 
-	def set_diff_parallel(self, attr:str):
+	def set_diff_parallel(self, attr:str,
+		bands=None,
+		):
 		'''
 		Along all bands
 		'''
-		for b in self.bands:
+		bands = self.bands if bands is None else bands
+		for b in bands:
 			self.set_diff_b(b, attr)
 
 	def get_b(self, b:str):
