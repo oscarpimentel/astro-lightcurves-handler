@@ -15,6 +15,8 @@ import torch
 def diff_vector(x,
 	uses_prepend=True,
 	):
+	if len(x)==0:
+		return x
 	if uses_prepend:
 		new_x = torch.cat([x[0][None,...], x], dim=0)
 	else:
