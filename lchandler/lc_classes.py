@@ -296,7 +296,7 @@ class SubLCO():
 
 	def get_custom_x(self, attrs:list):
 		values = [self.get_attr(attr)[...,None] for attr in attrs]
-		x = torch.concatenate(values, dim=-1)
+		x = torch.cat(values, dim=-1)
 		return x
 
 	def get_first_day(self):
@@ -524,7 +524,7 @@ class LCO():
 		):
 		bands = self.bands if bands is None else bands
 		values = [self.get_b(b).days for b in bands]
-		all_days = torch.concatenate(values, axis=0)
+		all_days = torch.cat(values, dim=0)
 		sorted_days_indexs = torch.argsort(all_days)
 		return sorted_days_indexs
 
@@ -547,7 +547,7 @@ class LCO():
 		):
 		bands = self.bands if bands is None else bands
 		values = [self.get_b(b).get_custom_x(attrs) for b in bands]
-		x = torch.concatenate(values, axis=0)
+		x = torch.cat(values, dim=0)
 		sorted_days_indexs = self.get_sorted_days_indexs_serial(bands)
 		x = x[sorted_days_indexs]
 		return x
