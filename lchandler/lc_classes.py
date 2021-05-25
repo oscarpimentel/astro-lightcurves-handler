@@ -30,7 +30,7 @@ def get_obs_noise_gaussian(obs, obse, obs_min_lim,
 	):
 	if mode=='norm':
 		obs_values = torch.normal(obs, obse*std_scale)
-		obs_values = torch.clip(obs_values, obs_min_lim, None)
+		obs_values = torch.clamp(obs_values, obs_min_lim, None)
 	else:
 		raise Exception(f'no mode {mode}')
 	return obs_values
