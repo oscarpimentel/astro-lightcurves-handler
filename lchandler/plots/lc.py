@@ -33,7 +33,7 @@ def plot_lightcurve(ax, lcobj, b, label,
 	plot a light curve!!
 	bar errors asume that observation error is the scale of a gaussian distribution
 	'''
-	lcobjb = lcobj.get_b(b).to('cpu') if not b is None else lcobj
+	lcobjb = lcobj.get_b(b) if not b is None else lcobj
 	new_days = lcobjb.days
 	valid_indexs = new_days<=max_day
 	new_days = new_days[valid_indexs]

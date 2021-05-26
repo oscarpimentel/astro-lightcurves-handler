@@ -3,12 +3,10 @@ from __future__ import division
 from . import C_
 
 import numpy as np
-import torch
 import random
 import copy
 import fuzzytools.datascience.statistics as fstats
 from fuzzytools.datascience.xerror import XError
-from fuzzytools.prints import HiddenPrints, ShowPrints
 from fuzzytools.strings import get_bar
 from fuzzytools.level_bars import LevelBar
 from fuzzytools.lists import get_bootstrap
@@ -21,7 +19,7 @@ from copy import copy
 def get_sigma_clipping_indexing(x, dist_mean, dist_sigma, sigma_m:float,
 	apply_lower_bound:bool=True,
 	):
-	valid_indexs = torch.ones((len(x),), dtype=bool)
+	valid_indexs = np.ones((len(x),), dtype=bool)
 	valid_indexs &= x < dist_mean+dist_sigma*sigma_m # is valid if is in range
 	if apply_lower_bound:
 		valid_indexs &= x > dist_mean-dist_sigma*sigma_m # is valid if is in range
@@ -32,11 +30,11 @@ def search_over_sigma_samples(lcset, b:str, dist_mean, dist_sigma, sigma_m,
 	):
 	total_deleted_points = 0
 	for lcobj_name in lcset.get_lcobj_names():
-		sigmas = lcset[lcobj_name].get_b(b).obse # get
+		sigmas = lcset[lcobj_name].get_b(b).obse
 		valid_indexs = get_sigma_clipping_indexing(sigmas, dist_mean, dist_sigma, sigma_m, apply_lower_bound)
-		deleted_points = torch.sum(~valid_indexs)
+		deleted_points = np.sum(~valid_indexs)
 		total_deleted_points += deleted_points
-		lcset.data[lcobj_name].get_b(b).apply_valid_indexs_to_attrs(valid_indexs) # set
+		lcset.data[lcobj_name].get_b(b).apply_valid_indexs_to_attrs(valid_indexs)
 
 	return total_deleted_points
 
@@ -114,27 +112,25 @@ class LCDataset():
 		verbose:int=1,
 		remove_old_lcset=True,
 		):
-		printClass = ShowPrints if verbose else HiddenPrints
-		with printClass():
-			lcset = self.set_lcset(new_lcset_name, self[lcset_name].copy())
-			print(f'survey={lcset.survey} - after processing={lcset_name} (>{new_lcset_name})')
-			total_deleted_points = {b:0 for b in lcset.band_names}
-			for k in range(sigma_n):
-				print(f'k={k}')
-				for b in lcset.band_names:
-					sigma_values = lcset.get_lcset_values_b(b, 'obse')
-					sigma_samples = len(sigma_values)
-					mean = torch.mean(sigma_values)
-					sigma = torch.std(sigma_values)
-					deleted_points = search_over_sigma_samples(lcset, b, mean, sigma, sigma_m, apply_lower_bound)
-					print(f'\tband={b} - sigma_samples={sigma_samples:,} - mean={mean} - std={sigma}')
-					print(f'\tdeleted_points={deleted_points:,}')
-					total_deleted_points[b] += deleted_points
+		lcset = self.set_lcset(new_lcset_name, self[lcset_name].copy())
+		#print(f'survey={lcset.survey} - after processing={lcset_name} (>{new_lcset_name})')
+		total_deleted_points = {b:0 for b in lcset.band_names}
+		for k in range(sigma_n):
+			#print(f'k={k}')
+			for b in lcset.band_names:
+				sigma_values = lcset.get_lcset_values_b(b, 'obse')
+				sigma_samples = len(sigma_values)
+				mean = np.mean(sigma_values)
+				sigma = np.std(sigma_values)
+				deleted_points = search_over_sigma_samples(lcset, b, mean, sigma, sigma_m, apply_lower_bound)
+				#print(f'\tband={b} - sigma_samples={sigma_samples:,} - mean={mean} - std={sigma}')
+				#print(f'\tdeleted_points={deleted_points:,}')
+				total_deleted_points[b] += deleted_points
 		
 			lcset.clean_empty_obs_keys()
 			lcset.reset_day_offset_serial()
 			sigma_samples = len(lcset.get_lcset_values_b(b, 'obse'))
-			print(f'sigma_samples={sigma_samples:,} - total_deleted_points={total_deleted_points}')
+			#print(f'sigma_samples={sigma_samples:,} - total_deleted_points={total_deleted_points}')
 
 		if remove_old_lcset:
 			self.del_lcset(lcset_name)
@@ -166,11 +162,6 @@ class LCDataset():
 	def copy(self):
 		lcsets = {k:copy(self.lcsets[k]) for k in self.lcsets.keys()}
 		return LCDataset(lcsets)
-
-	def to(self, device):
-		for k in self.lcsets.keys():
-			self.lcsets[k] = self.lcsets[k].to(device)
-		return self
 
 ###################################################################################################################################################
 
@@ -230,7 +221,7 @@ class LCSet():
 
 	def clean_empty_obs_keys(self,
 		length_to_keep=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
-		verbose:int=1,
+		verbose:int=0,
 		):
 		lcobj_names = self.get_lcobj_names()
 		to_delete_lcobj_names = [lcobj_name for lcobj_name in lcobj_names if not any([len(self[lcobj_name].get_b(b))>=length_to_keep for b in self.band_names])]
@@ -336,10 +327,10 @@ class LCSet():
 		if len(lcobjs)>0:
 			xs = [lcobj.get_x_serial() for lcobj in lcobjs]
 			info_dict = {
-				f'{c}-$x$':XError(torch.cat([x[:,C_.OBS_INDEX] for x in xs])),
+				f'{c}-$x$':XError(np.concatenate([x[:,C_.OBS_INDEX] for x in xs])),
 				f'{c}-$L$':XError([len(lcobj) for lcobj in lcobjs]),
 				f'{c}-$\Delta T$':XError([lcobj.get_days_serial_duration() for lcobj in lcobjs]),
-				f'{c}-$\Delta t$':XError(torch.cat([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs])),
+				f'{c}-$\Delta t$':XError(np.concatenate([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs])),
 			}
 		else:
 			info_dict = {
@@ -368,10 +359,10 @@ class LCSet():
 		lcobjs = self.get_lcobjs(c)
 		if len(lcobjs)>0:
 			info_dict = {
-				f'{c}-$x$':XError(torch.cat([x.get_b(b).obs for x in lcobjs])),
+				f'{c}-$x$':XError(np.concatenate([x.get_b(b).obs for x in lcobjs])),
 				f'{c}-$L$':XError([len(x.get_b(b)) for x in lcobjs]),
 				f'{c}-$\Delta T$':XError([x.get_b(b).get_days_duration() for x in lcobjs if len(x.get_b(b))>=1]),
-				f'{c}-$\Delta t$':XError(torch.cat([x.get_b(b).get_diff('days') for x in lcobjs])),
+				f'{c}-$\Delta t$':XError(np.concatenate([x.get_b(b).get_diff('days') for x in lcobjs])),
 			}
 		else:
 			info_dict = {
@@ -475,7 +466,7 @@ class LCSet():
 		target_class:str=None,
 		):
 		values = [getattr(lcobj.get_b(b), attr) for lcobj in self.get_lcobjs() if (target_class is None or target_class==self.class_names[lcobj.y])]
-		values = torch.cat(values, dim=0)
+		values = np.concatenate(values, axis=0)
 		return values
 
 	def get_lcset_max_value_b(self, b:str, attr,
@@ -491,7 +482,7 @@ class LCSet():
 		Get values of attr along all bands
 		'''
 		values = [self.get_lcset_values_b(b, attr, target_class) for b in self.band_names]
-		return torch.cat(values, dim=0)
+		return np.concatenate(values, axis=0)
 
 	def reset_day_offset_serial(self,
 		store_day_offset:bool=False,
@@ -508,8 +499,3 @@ class LCSet():
 		for lcobj_name in lcobj_names:
 			new.set_lcobj(lcobj_name, other[lcobj_name].copy())
 		return new
-
-	def to(self, device):
-		for lcobj_name in self.get_lcobj_names():
-			self.data[lcobj_name] = self.data[lcobj_name].to(device)
-		return self
