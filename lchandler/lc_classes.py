@@ -9,6 +9,7 @@ from scipy.stats import t
 #import fuzzytools.numba as torch
 from copy import copy, deepcopy
 import torch
+CHECK = False
 
 ###################################################################################################################################################
 
@@ -24,17 +25,6 @@ def diff_vector(x,
 	dx = new_x[1:]-new_x[:-1]
 	return dx
 
-def get_obs_noise_gaussian(obs, obse, obs_min_lim,
-	std_scale:float=C_.OBSE_STD_SCALE,
-	mode='norm',
-	):
-	if mode=='norm':
-		obs_values = torch.normal(obs, obse*std_scale)
-		obs_values = torch.clamp(obs_values, obs_min_lim, None)
-	else:
-		raise Exception(f'no mode {mode}')
-	return obs_values
-
 ###################################################################################################################################################
 
 class SubLCO():
@@ -43,17 +33,22 @@ class SubLCO():
 	'''
 	def __init__(self, days, obs, obs_errors,
 		y:int=None,
+		dtype=torch.float32,
+		device='cpu',
 		):
-		self.set_values(days, obs, obs_errors)
+		self.days = days
+		self.obs = obs
+		self.obs_errors = obs_errors
 		self.y = y
+		self.dtype = dtype
+		self.device = device
 		self.reset()
 
 	def reset(self):
-		self.set_device('cpu')
-		self.set_synthetic_mode(None)	
-
-	def set_device(self, device):
-		self.device = device
+		self.set_values(self.days, self.obs, self.obs_errors)
+		self.astype(self.dtype)
+		self.to(self.device)
+		self.set_synthetic_mode(None)
 
 	def get_synthetic_mode(self):
 		return self.synthetic_mode
@@ -78,28 +73,31 @@ class SubLCO():
 			tdays = torch.Tensor(days)
 			tobs = torch.Tensor(obs)
 			tobse = torch.Tensor(obs_errors)
+
 		self.set_days(tdays)
 		self.set_obs(tobs)
 		self.set_obse(tobse)
 
 	def set_days(self, days):
 		assert len(days.shape)==1
-		assert torch.all((diff_vector(days, uses_prepend=False)>0)) # check if days are in order
+		if CHECK:
+			assert torch.all((diff_vector(days, uses_prepend=False)>0)) # check if days are in order
 		self.days = days
 
 	def set_obs(self, obs):
 		assert len(obs.shape)==1
-		assert torch.all(obs>=0)
+		if CHECK:
+			assert torch.all(obs>=0)
 		self.obs = obs
 
 	def set_obse(self, obs_errors):
 		assert len(obs_errors.shape)==1
-		if not torch.all(obs_errors>0):
-			raise Exception(f'wrong obs_errors: {obs_errors}')
+		if CHECK:
+			assert torch.all(obs_errors>=0)
 		self.obse = obs_errors
 
 	def add_day_values(self, values,
-		recalculate:bool=True,
+		recalculate_order:bool=True,
 		):
 		'''
 		This method overrides information!
@@ -110,10 +108,10 @@ class SubLCO():
 		new_days = self.days+values
 		valid_indexs = torch.argsort(new_days) # must sort before the values to mantain sequenciality
 		self.days = new_days # bypass set_days() because non-sorted asumption
-		self.apply_valid_indexs_to_attrs(valid_indexs, recalculate) # apply valid indexs to all
+		self.apply_valid_indexs_to_attrs(valid_indexs, recalculate_order) # apply valid indexs to all
 
 	def add_day_noise_uniform(self, hours_noise:float,
-		recalculate:bool=True,
+		recalculate_order:bool=True,
 		):
 		'''
 		This method overrides information!
@@ -122,11 +120,11 @@ class SubLCO():
 			return
 
 		hours_noise = torch.FloatTensor(len(self)).uniform_(-hours_noise, hours_noise)
-		self.add_day_values(hours_noise/24., recalculate)
+		self.add_day_values(hours_noise/24.,
+			recalculate_order,
+			)
 
-	def add_obs_values(self, values,
-		recalculate:bool=True,
-		):
+	def add_obs_values(self, values):
 		'''
 		This method overrides information!
 		Always use this method to add values
@@ -136,97 +134,61 @@ class SubLCO():
 		new_obs = self.obs+values
 		self.set_obs(new_obs)
 
-		###  calcule again as the original values changed
-		if recalculate:
-			if hasattr(self, 'd_obs'):
-				self.set_diff('obs')
-
 	def add_obs_noise_gaussian(self, obs_min_lim:float,
 		std_scale:float=C_.OBSE_STD_SCALE,
 		mode='norm',
-		recalculate:bool=True,
 		):
 		'''
 		This method overrides information!
 		'''
 		if std_scale==0:
 			return
-		assert torch.all(self.obs>=obs_min_lim)
-		obs_values = get_obs_noise_gaussian(self.obs, self.obse, obs_min_lim, std_scale, mode)
-		self.add_obs_values(obs_values-self.obs, recalculate)
+		if mode=='norm':
+			obs_values = torch.normal(self.obs, self.obse*std_scale)
+			obs_values = torch.clamp(obs_values, obs_min_lim, None)
+		else:
+			raise Exception(f'no mode {mode}')
+		self.add_obs_values(obs_values-self.obs)
 		return
 
-	def apply_downsampling(self, ds_prob,
-		apply_prob=1,
+	def apply_downsampling_window(self, mode_d, ds_prob,
 		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
-		recalculate:bool=True,
+		recalculate_order:bool=True,
 		):
-		assert ds_prob>=0 and ds_prob<=1
-		assert apply_prob>=0 and apply_prob<=1
-		success = False
-		if ds_prob==0:
-			return success
-		if apply_prob==0:
-			return success
-		if len(self)<=min_valid_length:
-			return success
-		if apply_prob<=random.random():
-			return success # exit
-
-		p = torch.full((len(self),), fill_value=1-ds_prob, device=self.device)
-		valid_mask = torch.bernoulli(p).bool()
-		if valid_mask.sum()<min_valid_length: # extra case. If by change the mask implies a very short curve
-			valid_mask = torch.zeros((len(self)), dtype=torch.bool)
-			valid_mask[:min_valid_length] = True
-			valid_mask = valid_mask[torch.randperm(len(valid_mask))]
-
-		### calcule again as the original values changed
-		self.apply_valid_indexs_to_attrs(valid_mask, recalculate)
-		success = True
-		return success
-
-	def apply_downsampling_window(self, mode_d,
-		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
-		recalculate:bool=True,
-		):
+		if mode_d is None or len(mode_d)==0:
+			mode_d = {'none':1}
 		keys = list(mode_d.keys())
 		mode = np.random.choice(keys, p=[mode_d[k] for k in keys])
-		#print(mode)
-		self._apply_downsampling_window(mode,
-		min_valid_length,
-		recalculate,
-		)
-
-	def _apply_downsampling_window(self, mode,
-		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
-		recalculate:bool=True,
-		):
-		success = False
+		valid_mask = torch.zeros((len(self)), dtype=torch.bool, device=self.device)
 		if len(self)<=min_valid_length:
-			return success
-
+			return
 		if mode=='none':
-			success = True
-			return success
+			valid_mask[:] = True
 
 		elif mode=='left':
 			new_length = random.randint(min_valid_length, len(self)) # [a,b]
-			valid_mask = torch.zeros((len(self)), dtype=torch.bool)
 			valid_mask[:new_length] = True
 
 		elif mode=='random':
 			new_length = random.randint(min_valid_length, len(self)) # [a,b]
-			valid_mask = torch.zeros((len(self)), dtype=torch.bool)
 			index = random.randint(0, len(self)-new_length) # [a,b]
 			valid_mask[index:index+new_length] = True
-
 		else:
 			raise Exception(f'no mode {mode}')
 
+		assert ds_prob>=0 and ds_prob<=1
+		if ds_prob>0:
+			p = torch.full((len(self),), fill_value=1-ds_prob, device=self.device)
+			valid_mask = valid_mask & torch.bernoulli(p).bool()
+
+		if valid_mask.sum()<min_valid_length: # extra case. If by change the mask implies a very short curve
+			valid_mask = torch.zeros((len(self)), dtype=torch.bool, device=self.device)
+			valid_mask[:min_valid_length] = True
+			valid_mask = valid_mask[torch.randperm(len(valid_mask))]
+
 		### calcule again as the original values changed
-		self.apply_valid_indexs_to_attrs(valid_mask, recalculate)
-		success = True
-		return success
+		self.apply_valid_indexs_to_attrs(valid_mask, recalculate_order)
+		return
 
 	def get_diff(self, attr:str):
 		return diff_vector(getattr(self, attr))
@@ -239,7 +201,7 @@ class SubLCO():
 		setattr(self, f'd_{attr}', diffv)
 
 	def apply_valid_indexs_to_attrs(self, valid_indexs,
-		recalculate:bool=True,
+		recalculate_order:bool=True,
 		):
 		'''
 		Be careful, this method can remove info
@@ -254,10 +216,11 @@ class SubLCO():
 				assert original_len==len(x)
 				assert len(x.shape)==1 # 1D tensor
 				#print(key)
-				setattr(self, key, x[valid_indexs])
+				new_x = x[valid_indexs]
+				setattr(self, key, new_x)
 
 		### calcule again as the original values changed
-		if recalculate:
+		if recalculate_order:
 			if hasattr(self, 'd_days'):
 				self.set_diff('days')
 			if hasattr(self, 'd_obs'):
@@ -320,6 +283,8 @@ class SubLCO():
 			copy(self.obs),
 			copy(self.obse),
 			self.y,
+			self.dtype,
+			self.device,
 			)
 		new_sublco.set_synthetic_mode(self.get_synthetic_mode())
 
@@ -367,7 +332,7 @@ class SubLCO():
 				new_obse.append(self.obse[ddict[k]][i])
 			elif mode=='expectation':
 				obse_exp = torch.exp(-torch.log(self.obse[ddict[k]]+C_.EPS))
-				assert len(torch.where(obse_exp==torch.infty)[0])==0
+				assert len(torch.where(obse_exp==np.inf)[0])==0
 				#print(obse_exp, obse_exp.shape)
 				dist = obse_exp/obse_exp.sum()
 				new_days.append(torch.sum(self.days[ddict[k]]*dist))
@@ -376,11 +341,11 @@ class SubLCO():
 			else:
 				raise Exception(f'no mode {mode}')
 
-		self.set_values(torch.array(new_days), torch.array(new_obs), torch.array(new_obse))
+		self.set_values(new_days, new_obs, new_obse)
 
 	def get_snr(self):
 		if len(self)==0:
-			return -torch.infty
+			return -np.inf
 		else:
 			eps = 0
 			snr = (self.obs**2)/(self.obse**2+eps)
@@ -401,6 +366,8 @@ class SubLCO():
 				new_obs[valid_indexs],
 				new_obse[valid_indexs],
 				self.y,
+				self.dtype,
+				self.device,
 				)
 			return new_lco
 
@@ -408,11 +375,22 @@ class SubLCO():
 		return self+other
 
 	def to(self, device):
-		self.set_device(device)
+		self.device = device
 		for key in self.__dict__.keys():
 			x = self.__dict__[key]
 			if isinstance(x, torch.Tensor): # apply same mask to all in the object
-				self.x = self.x.to(self.device)
+				new_x = x.to(self.device)
+				setattr(self, key, new_x)
+		return self
+
+	def astype(self, dtype):
+		self.dtype = dtype
+		for key in self.__dict__.keys():
+			x = self.__dict__[key]
+			if isinstance(x, torch.Tensor): # apply same mask to all in the object
+				new_x = x.type(self.dtype)
+				setattr(self, key, new_x)
+		return self
 
 ###################################################################################################################################################
 
@@ -532,7 +510,7 @@ class LCO():
 		bands=None,
 		):
 		bands = self.bands if bands is None else bands
-		onehot = torch.zeros((len(self), len(bands)), dtype=torch.bool)
+		onehot = torch.zeros((len(self), len(bands)), dtype=torch.bool, device=self.get_device())
 		index = 0
 		for kb,b in enumerate(bands):
 			l = len(getattr(self, b))
@@ -629,8 +607,13 @@ class LCO():
 			self.get_b(b).clean_small_cadence(dt, mode)
 
 	def get_snr(self):
-		return torch.max(torch.array([self.get_b(b).get_snr() for b in self.bands]))
+		return max([self.get_b(b).get_snr() for b in self.bands])
 
 	def to(self, device):
 		for b in self.bands:
-			self.get_b().to(device)
+			self.add_sublcobj_b(b, self.get_b(b).to(device))
+		return self
+
+	def get_device(self):
+		for b in self.bands:
+			return self.get_b(b).device
