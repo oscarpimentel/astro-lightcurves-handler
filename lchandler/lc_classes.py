@@ -42,7 +42,6 @@ class SubLCO():
 
 	def reset(self):
 		self.set_values(self.days, self.obs, self.obse)
-		self.astype(self.dtype)
 		self.set_synthetic_mode(None)
 
 	def get_synthetic_mode(self):
@@ -61,31 +60,31 @@ class SubLCO():
 		assert len(days)==len(obs)
 		assert len(days)==len(obse)
 		if isinstance(days, np.ndarray):
-			tdays = copy(days)
-			tobs = copy(obs)
-			tobse = copy(obse)
+			tdays = copy(days).astype(self.dtype)
+			tobs = copy(obs).astype(self.dtype)
+			tobse = copy(obse).astype(self.dtype)
 		else:
-			tdays = np.array(days)
-			tobs = np.array(obs)
-			tobse = np.array(obse)
+			tdays = np.array(days, dtype=self.dtype)
+			tobs = np.array(obs, dtype=self.dtype)
+			tobse = np.array(obse, dtype=self.dtype)
 
-		self.set_days(tdays)
-		self.set_obs(tobs)
-		self.set_obse(tobse)
+		self._set_days(tdays)
+		self._set_obs(tobs)
+		self._set_obse(tobse)
 
-	def set_days(self, days):
+	def _set_days(self, days):
 		assert len(days.shape)==1
 		if C_.CHECK:
 			assert np.all((diff_vector(days, uses_prepend=False)>0)) # C_.check if days are in order
 		self.days = days
 
-	def set_obs(self, obs):
+	def _set_obs(self, obs):
 		assert len(obs.shape)==1
 		if C_.CHECK:
 			assert np.all(obs>=0)
 		self.obs = obs
 
-	def set_obse(self, obse):
+	def _set_obse(self, obse):
 		assert len(obse.shape)==1
 		if C_.CHECK:
 			assert np.all(obse>=0)
@@ -102,7 +101,7 @@ class SubLCO():
 		assert len(self)==len(values)
 		new_days = self.days+values
 		valid_indexs = np.argsort(new_days) # must sort before the values to mantain sequenciality
-		self.days = new_days # bypass set_days() because non-sorted asumption
+		self.days = new_days # bypass _set_days() because non-sorted asumption
 		self.apply_valid_indexs_to_attrs(valid_indexs, recalculate_order) # apply valid indexs to all
 
 	def add_day_noise_uniform(self, hours_noise:float,
@@ -127,7 +126,7 @@ class SubLCO():
 		'''
 		assert len(self)==len(values)
 		new_obs = self.obs+values
-		self.set_obs(new_obs)
+		self._set_obs(new_obs)
 
 	def add_obs_noise_gaussian(self, obs_min_lim:float,
 		std_scale:float=C_.OBSE_STD_SCALE,

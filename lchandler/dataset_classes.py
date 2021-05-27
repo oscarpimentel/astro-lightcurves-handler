@@ -95,7 +95,6 @@ class LCDataset():
 			random_state=random_state,
 			permute=permute,
 			)
-		#print(obj_names_kdict)
 
 		for new_set_name in obj_names_kdict.keys():
 			self.set_lcset(new_set_name, to_split_lcset.copy({}))
