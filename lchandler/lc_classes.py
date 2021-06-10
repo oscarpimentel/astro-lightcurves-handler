@@ -2,12 +2,15 @@ from __future__ import print_function
 from __future__ import division
 from . import C_
 
-from numba import jit
 import numpy as np
 import random
 from scipy.stats import t
 from copy import copy, deepcopy
 from fuzzytools import numba as ftnumba
+
+DF = 2 # 1 2 5 np.inf
+OBSE_STD_SCALE = 1/2
+OBS_NOISE_RANGE = 3
 
 ###################################################################################################################################################
 
@@ -22,6 +25,25 @@ def diff_vector(x,
 		new_x = x
 	dx = new_x[1:]-new_x[:-1]
 	return dx
+
+def get_new_noisy_obs(obs, obse, obs_min_lim,
+	std_scale=OBSE_STD_SCALE,
+	df=DF,
+	obs_noise_range=OBS_NOISE_RANGE,
+	):
+	assert df>=0
+	std = obse*std_scale
+	if df==np.inf:
+		new_obs = np.random.standard_normal(size=len(obs))*std+obs
+	else:
+		new_obs = np.random.standard_t(df, size=len(obs))*std+obs
+
+	bar_size = (1.645*2)*obse # for .95 percentile used in plot
+	min_lim = obs-bar_size*obs_noise_range/2
+	max_lim = obs+bar_size*obs_noise_range/2
+	new_obs = np.clip(new_obs, min_lim, max_lim)
+	new_obs = np.clip(new_obs, obs_min_lim, None)
+	return new_obs
 
 ###################################################################################################################################################
 
@@ -129,19 +151,20 @@ class SubLCO():
 		self._set_obs(new_obs)
 
 	def add_obs_noise_gaussian(self, obs_min_lim:float,
-		std_scale:float=C_.OBSE_STD_SCALE,
-		mode='norm',
+		std_scale=OBSE_STD_SCALE,
+		df=DF,
+		obs_noise_range=OBS_NOISE_RANGE,
 		):
 		'''
 		This method overrides information!
 		'''
 		if std_scale==0:
 			return
-		if mode=='norm':
-			obs_values = np.random.normal(self.obs, self.obse*std_scale)
-			obs_values = np.clip(obs_values, obs_min_lim, None)
-		else:
-			raise Exception(f'no mode {mode}')
+		obs_values = get_new_noisy_obs(self.obs, self.obse, obs_min_lim,
+			std_scale,
+			df,
+			obs_noise_range,
+			)
 		self.add_obs_values(obs_values-self.obs)
 		return
 

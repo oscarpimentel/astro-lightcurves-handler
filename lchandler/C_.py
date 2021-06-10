@@ -2,20 +2,11 @@ import numpy as np
 
 ###################################################################################################################################################
 EPS = 1e-5
+
 DEFAULT_ZP = 48.6
 DEFAULT_FLUX_SCALE = 1e26 # 1e0, 1e26
 DEFAULT_MAG_SCALE = 1
-OBSE_STD_SCALE = 1/3
-KFOLDS = 3
 CHECK = False
-
-### PLOTS
-PLOT_OBSE_STD_SCALE = 1
-PLOT_PERCENTILE_BAR = 90
-
-### EXPORT
-N_JOBS = 6 # The number of jobs to use for the computation. If -1 all CPUs are used. If 1 is given, no parallel computing code is used at all, which is useful for debugging. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used.
-CHUNK_SIZE = N_JOBS*1
 
 ### THRESHOLDS
 MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT = 5
