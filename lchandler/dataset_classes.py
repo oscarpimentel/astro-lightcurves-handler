@@ -187,7 +187,8 @@ class LCSet():
 		lcobj_classes = [self.class_names[self[lcobj_name].y] for lcobj_name in lcobj_names]
 		self.boostrap = BalancedCyclicBoostraping(lcobj_names, lcobj_classes)
 
-	def get_boostrap_samples(self):
+	def get_boostrap_samples(self, n):
+		self.boostrap.n = n
 		boostrap_samples = self.boostrap.get_samples()
 		return boostrap_samples
 
