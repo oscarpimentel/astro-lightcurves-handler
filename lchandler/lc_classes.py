@@ -10,7 +10,7 @@ from fuzzytools import numba as ftnumba
 
 DF = 2 # 1 2 5 np.inf
 OBSE_STD_SCALE = 1/2
-OBS_NOISE_RANGE = 3
+OBS_NOISE_RANGE = 2
 
 ###################################################################################################################################################
 
@@ -171,23 +171,27 @@ class SubLCO():
 	def apply_downsampling_window(self, mode_d, ds_prob,
 		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		recalculate_order:bool=True,
+		min_frac=0.333,
 		):
+		if len(self)<=min_valid_length:
+			return
 		if mode_d is None or len(mode_d)==0:
 			mode_d = {'none':1}
 		keys = list(mode_d.keys())
 		mode = np.random.choice(keys, p=[mode_d[k] for k in keys])
+
+		### mask
 		valid_mask = np.zeros((len(self)), dtype=np.bool)
-		if len(self)<=min_valid_length:
-			return
+		min_length = max(min_valid_length, int(min_frac*len(self)))
 		if mode=='none':
 			valid_mask[:] = True
 
 		elif mode=='left':
-			new_length = random.randint(min_valid_length, len(self)) # [a,b]
+			new_length = random.randint(min_length, len(self)) # [a,b]
 			valid_mask[:new_length] = True
 
 		elif mode=='random':
-			new_length = random.randint(min_valid_length, len(self)) # [a,b]
+			new_length = random.randint(min_length, len(self)) # [a,b]
 			index = random.randint(0, len(self)-new_length) # [a,b]
 			valid_mask[index:index+new_length] = True
 		else:
@@ -199,9 +203,9 @@ class SubLCO():
 			ber_valid_mask = ftnumba.bernoulli(1-ds_prob, len(self))
 			valid_mask = valid_mask & ber_valid_mask 
 
-		if valid_mask.sum()<min_valid_length: # extra case. If by change the mask implies a very short curve
+		if valid_mask.sum()<min_length: # extra case. If by change the mask implies a very short curve
 			valid_mask = np.zeros((len(self)), dtype=np.bool)
-			valid_mask[:min_valid_length] = True
+			valid_mask[:min_length] = True
 			valid_mask = valid_mask[np.random.permutation(len(valid_mask))]
 
 		### calcule again as the original values changed
