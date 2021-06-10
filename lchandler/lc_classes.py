@@ -171,7 +171,7 @@ class SubLCO():
 	def apply_downsampling_window(self, mode_d, ds_prob,
 		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		recalculate_order:bool=True,
-		min_frac=0.333,
+		min_frac=1/3,
 		):
 		if len(self)<=min_valid_length:
 			return
