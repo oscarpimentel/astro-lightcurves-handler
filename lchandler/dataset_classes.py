@@ -183,6 +183,9 @@ class LCSet():
 		self.reset()
 
 	def reset(self):
+		self.reset_boostrap()
+
+	def reset_boostrap(self):
 		lcobj_names = self.get_lcobj_names()
 		lcobj_classes = [self.class_names[self[lcobj_name].y] for lcobj_name in lcobj_names]
 		self.boostrap = BalancedCyclicBoostraping(lcobj_names, lcobj_classes)
