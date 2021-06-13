@@ -32,11 +32,12 @@ def get_new_noisy_obs(obs, obse, obs_min_lim,
 	obs_noise_range=OBS_NOISE_RANGE,
 	):
 	assert df>=0
+	dtype = obs.dtype
 	std = obse*std_scale
 	if df==np.inf:
-		new_obs = np.random.standard_normal(size=len(obs))*std+obs
+		new_obs = np.random.standard_normal(size=len(obs)).astype(dtype)*std+obs
 	else:
-		new_obs = np.random.standard_t(df, size=len(obs))*std+obs
+		new_obs = np.random.standard_t(df, size=len(obs)).astype(dtype)*std+obs
 
 	bar_size = (1.645*2)*obse # for .95 percentile used in plot
 	min_lim = obs-bar_size*obs_noise_range/2
