@@ -185,10 +185,14 @@ class LCSet():
 	def reset(self):
 		self.reset_boostrap()
 
-	def reset_boostrap(self):
+	def reset_boostrap(self,
+			k_n=.5,
+			):
 		lcobj_names = self.get_lcobj_names()
 		lcobj_classes = [self.class_names[self[lcobj_name].y] for lcobj_name in lcobj_names]
-		self.boostrap = BalancedCyclicBoostraping(lcobj_names, lcobj_classes)
+		self.boostrap = BalancedCyclicBoostraping(lcobj_names, lcobj_classes,
+			k_n=k_n,
+			)
 
 	def get_boostrap_samples(self):
 		boostrap_samples = self.boostrap.get_samples()
