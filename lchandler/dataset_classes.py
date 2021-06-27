@@ -64,6 +64,14 @@ class LCDataset():
 	def del_lcset(self, lcset_name):
 		self.lcsets.pop(lcset_name, None) # pop and lost reference
 
+	def only_keep_kf(self, kf):
+		for lcset_name in self.get_lcset_names():
+			if '@' in lcset_name and lcset_name.split('@')[0]==kf:
+				pass
+			else:
+				self.del_lcset(lcset_name)
+		return self
+
 	def __getitem__(self, lcset_name):
 		return self.lcsets[lcset_name]
 
