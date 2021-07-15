@@ -367,13 +367,21 @@ class SubLCO():
 
 		self.set_values(new_days, new_obs, new_obse)
 
-	def get_snr(self):
+	def get_snr(self,
+		eps=1e-10,
+		):
 		if len(self)==0:
-			return -np.inf
+			return np.nan
 		else:
-			eps = 0
 			snr = (self.obs**2)/(self.obse**2+eps)
 			return np.mean(snr)
+
+	def get_tmax(self):
+		if len(self)==0:
+			return np.nan
+		else:
+			tmax = self.days[np.argmax(self.obs)]
+			return tmax
 
 	def __add__(self, other):
 		if other==0 or other is None:
@@ -621,4 +629,10 @@ class LCO():
 			self.get_b(b).clean_small_cadence(dt, mode)
 
 	def get_snr(self):
-		return max([self.get_b(b).get_snr() for b in self.bands])
+		snr_d = {b:self.get_b(b).get_snr() for b in self.bands}
+		snr_max = np.nanmax([snr_d[b] for b in self.bands])
+		return snr_max
+
+	def get_tmax(self):
+		tmax_d = {b:self.get_b(b).get_tmax() for b in self.bands}
+		return tmax_d

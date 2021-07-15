@@ -78,7 +78,7 @@ class LCDataset():
 	def __repr__(self):
 		txt = 'LCDataset:\n'
 		for lcset_name in self.get_lcset_names():
-			txt += f'[{lcset_name} - samples {len(self[lcset_name]):,}]\n{self[lcset_name]}\n'
+			txt += f'[{lcset_name}; samples {len(self[lcset_name]):,}]\n{self[lcset_name]}\n'
 			txt += get_bar()+'\n'
 		return txt
 
@@ -121,7 +121,7 @@ class LCDataset():
 		remove_old_lcset=True,
 		):
 		lcset = self.set_lcset(new_lcset_name, self[lcset_name].copy())
-		#print(f'survey={lcset.survey} - after processing={lcset_name} (>{new_lcset_name})')
+		#print(f'survey={lcset.survey}; after processing={lcset_name} (>{new_lcset_name})')
 		total_deleted_points = {b:0 for b in lcset.band_names}
 		for k in range(sigma_n):
 			#print(f'k={k}')
@@ -131,14 +131,14 @@ class LCDataset():
 				mean = np.mean(sigma_values)
 				sigma = np.std(sigma_values)
 				deleted_points = search_over_sigma_samples(lcset, b, mean, sigma, sigma_m, apply_lower_bound)
-				#print(f'\tband={b} - sigma_samples={sigma_samples:,} - mean={mean} - std={sigma}')
+				#print(f'\tband={b}; sigma_samples={sigma_samples:,}; mean={mean}; std={sigma}')
 				#print(f'\tdeleted_points={deleted_points:,}')
 				total_deleted_points[b] += deleted_points
 		
 			lcset.clean_empty_obs_keys()
 			lcset.reset_day_offset_serial()
 			sigma_samples = len(lcset.get_lcset_values_b(b, 'obse'))
-			#print(f'sigma_samples={sigma_samples:,} - total_deleted_points={total_deleted_points}')
+			#print(f'sigma_samples={sigma_samples:,}; total_deleted_points={total_deleted_points}')
 
 		if remove_old_lcset:
 			self.del_lcset(lcset_name)
@@ -354,10 +354,11 @@ class LCSet():
 		lcobjs = self.get_lcobjs(c)
 		if len(lcobjs)>0:
 			info_dict = {
-				f'{c}-$x$':XError(np.concatenate([x.get_b(b).obs for x in lcobjs])),
-				f'{c}-$L$':XError([len(x.get_b(b)) for x in lcobjs]),
-				f'{c}-$\Delta T$':XError([x.get_b(b).get_days_duration() for x in lcobjs if len(x.get_b(b))>=1]),
-				f'{c}-$\Delta t$':XError(np.concatenate([x.get_b(b).get_diff('days') for x in lcobjs])),
+				f'{c}-$x$':XError(np.concatenate([lcobj.get_b(b).obs for lcobj in lcobjs])),
+				f'{c}-$L$':XError([len(lcobj.get_b(b)) for lcobj in lcobjs]),
+				f'{c}-$\Delta T$':XError([lcobj.get_b(b).get_days_duration() for lcobj in lcobjs if len(lcobj.get_b(b))>=1]),
+				f'{c}-$\Delta t$':XError(np.concatenate([lcobj.get_b(b).get_diff('days') for lcobj in lcobjs])),
+				f'{c}-tmax':XError([lcobj.get_b(b).get_tmax() for lcobj in lcobjs if not np.isnan(lcobj.get_b(b).get_tmax())]),
 			}
 		else:
 			info_dict = {
@@ -388,7 +389,8 @@ class LCSet():
 		lengths = sum([df[f'{c}-$L$'].values[0] for c in self.class_names])
 		durations = sum([df[f'{c}-$\Delta T$'].values[0] for c in self.class_names])
 		cadences = sum([df[f'{c}-$\Delta t$'].values[0] for c in self.class_names])
-		txt = f'({b}) obs_samples={lengths.sum():,} - min_len={lengths.min()} - max_dur={durations.max():.1f}[days] - dur(p50)={durations.p50:.1f}[days] - cadence(p50)={cadences.p50:.1f}[days]\n'
+		tmaxs = sum([df[f'{c}-tmax'].values[0] for c in self.class_names])
+		txt = f'({b}) obs_samples={lengths.sum():,}; min_len={lengths.min()}; tmax={tmaxs.p50}; max_dur={durations.max():.1f} [days]; dur(p50)={durations.p50:.1f} [days]; cadence(p50)={cadences.p50:.1f} [days]\n'
 		return txt
 
 	def __repr_serial(self):
@@ -396,7 +398,7 @@ class LCSet():
 		lengths = sum([df[f'{c}-$L$'].values[0] for c in self.class_names])
 		durations = sum([df[f'{c}-$\Delta T$'].values[0] for c in self.class_names])
 		cadences = sum([df[f'{c}-$\Delta t$'].values[0] for c in self.class_names])
-		txt = f'(.) obs_samples={lengths.sum():,} - min_len={lengths.min()} - max_dur={durations.max():.1f}[days] - dur(p50)={durations.p50:.1f}[days] - cadence(p50)={cadences.p50:.1f}[days]\n'
+		txt = f'(.) obs_samples={lengths.sum():,}; min_len={lengths.min()}; max_dur={durations.max():.1f}[days]; dur(p50)={durations.p50:.1f}[days]; cadence(p50)={cadences.p50:.1f}[days]\n'
 		return txt
 
 	def __repr__(self):
