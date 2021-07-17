@@ -369,12 +369,20 @@ class SubLCO():
 
 	def get_snr(self,
 		eps=1e-10,
+		max_len=None,
 		):
 		if len(self)==0:
 			return np.nan
 		else:
-			snr = (self.obs**2)/(self.obse**2+eps)
+			max_len = len(self) if max_len is None else max_len
+			snr = (self.obs[:max_len]**2)/(self.obse[:max_len]**2+eps)
 			return np.mean(snr)
+
+	def get_max(self):
+		if len(self)==0:
+			return np.nan
+		else:
+			return np.max(self.obs)
 
 	def get_tmax(self):
 		if len(self)==0:
