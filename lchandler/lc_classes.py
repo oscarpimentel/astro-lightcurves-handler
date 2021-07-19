@@ -638,8 +638,7 @@ class LCO():
 
 	def get_snr(self):
 		snr_d = {b:self.get_b(b).get_snr() for b in self.bands}
-		snr_max = np.nanmax([snr_d[b] for b in self.bands])
-		return snr_max
+		return snr_d
 
 	def get_tmax(self):
 		tmax_d = {b:self.get_b(b).get_tmax() for b in self.bands}
