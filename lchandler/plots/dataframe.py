@@ -1,11 +1,11 @@
 from __future__ import print_function
 from __future__ import division
-from . import C_
+from . import _C
 
 import numpy as np
 import matplotlib.pyplot as plt
-import fuzzytools.cuteplots.plots as cplots
-import fuzzytools.cuteplots.colors as cc
+import fuzzytools.matplotlib.plots as cplots
+import fuzzytools.matplotlib.colors as cc
 
 ###################################################################################################################################################
 
@@ -32,7 +32,7 @@ def plot_class_distribution_df(labels_df, detections_df, label_to_class_dict, df
 			to_plot[f'obs samples - band={b}'] = [label_to_class_dict[l] for l in curve_points_samples]
 
 	#print(to_plot)
-	cmap = cc.colorlist_to_cmap([cc.NICE_COLORS_DICT['nice_gray']]+[C_.COLOR_DICT[b] for b in band_names])
+	cmap = cc.colorlist_to_cmap([cc.NICE_COLORS_DICT['nice_gray']]+[_C.COLOR_DICT[b] for b in band_names])
 	title = f'SNe class distribution'+'\n'
 	title += f'survey={survey_name}-{"".join(band_names)} - total samples={len(label_samples):,}#'+'\n'
 	plt_kwargs = {

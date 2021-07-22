@@ -1,6 +1,6 @@
 from __future__ import print_function
 from __future__ import division
-from . import C_
+from . import _C
 
 import numpy as np
 import random
@@ -97,19 +97,19 @@ class SubLCO():
 
 	def _set_days(self, days):
 		assert len(days.shape)==1
-		if C_.CHECK:
-			assert np.all((diff_vector(days, uses_prepend=False)>0)) # C_.check if days are in order
+		if _C.CHECK:
+			assert np.all((diff_vector(days, uses_prepend=False)>0)) # _C.check if days are in order
 		self.days = days
 
 	def _set_obs(self, obs):
 		assert len(obs.shape)==1
-		if C_.CHECK:
+		if _C.CHECK:
 			assert np.all(obs>=0)
 		self.obs = obs
 
 	def _set_obse(self, obse):
 		assert len(obse.shape)==1
-		if C_.CHECK:
+		if _C.CHECK:
 			assert np.all(obse>=0)
 		self.obse = obse
 
@@ -170,7 +170,7 @@ class SubLCO():
 		return
 
 	def apply_downsampling_window(self, mode_d, ds_prob,
-		min_valid_length:int=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
+		min_valid_length:int=_C.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		recalculate_order:bool=True,
 		min_frac=1/3,
 		):
@@ -330,7 +330,7 @@ class SubLCO():
 		return txt
 
 	def clean_small_cadence(self,
-		dt=C_.CADENCE_THRESHOLD,
+		dt=_C.CADENCE_THRESHOLD,
 		mode='expectation',
 		):
 		ddict = {}
@@ -355,7 +355,7 @@ class SubLCO():
 				new_obs.append(self.obs[ddict[k]][i])
 				new_obse.append(self.obse[ddict[k]][i])
 			elif mode=='expectation':
-				obse_exp = np.exp(-np.log(self.obse[ddict[k]]+C_.EPS))
+				obse_exp = np.exp(-np.log(self.obse[ddict[k]]+_C.EPS))
 				assert len(np.where(obse_exp==np.inf)[0])==0
 				#print(obse_exp, obse_exp.shape)
 				dist = obse_exp/obse_exp.sum()
@@ -368,14 +368,15 @@ class SubLCO():
 		self.set_values(new_days, new_obs, new_obse)
 
 	def get_snr(self,
-		eps=1e-10,
+		alpha=10,
+		beta=1e-10,
 		max_len=None,
 		):
 		if len(self)==0:
 			return np.nan
 		else:
 			max_len = len(self) if max_len is None else max_len
-			snr = (self.obs[:max_len]**2)/(self.obse[:max_len]**2+eps)
+			snr = (self.obs[:max_len]**2)/(alpha*self.obse[:max_len]**2+beta)
 			return np.mean(snr)
 
 	def get_max(self):
@@ -625,12 +626,12 @@ class LCO():
 		return all([not self.get_b(b).is_synthetic() for b in self.bands])
 
 	def any_band_eqover_length(self,
-		th_length=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
+		th_length=_C.MIN_POINTS_LIGHTCURVE_DEFINITION,
 		):
 		return any([len(self.get_b(b))>=th_length for b in self.bands])
 
 	def clean_small_cadence(self,
-		dt=C_.CADENCE_THRESHOLD,
+		dt=_C.CADENCE_THRESHOLD,
 		mode='expectation',
 		):
 		for b in self.bands:

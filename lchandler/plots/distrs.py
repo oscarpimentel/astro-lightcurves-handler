@@ -1,11 +1,11 @@
 from __future__ import print_function
 from __future__ import division
-from . import C_
+from . import _C
 
 import numpy as np
 import matplotlib.pyplot as plt
-import fuzzytools.cuteplots.plots as cplots
-import fuzzytools.cuteplots.colors as cc
+import fuzzytools.matplotlib.plots as cplots
+import fuzzytools.matplotlib.colors as cc
 from fuzzytools.datascience.statistics import dropout_extreme_percentiles
 import pandas as pd
 
@@ -74,8 +74,8 @@ def plot_values_distribution(lcdataset, set_name:str, attr:str,
 			fig, ax = cplots.plot_hist_bins(plot_df, **kwargs)
 
 			### multiband colors
-			ax.grid(color=C_.COLOR_DICT[b])
-			[ax.spines[border].set_color(C_.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
+			ax.grid(color=_C.COLOR_DICT[b])
+			[ax.spines[border].set_color(_C.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
 			[ax.spines[border].set_linewidth(2) for border in ['bottom', 'top', 'right', 'left']]
 	
 	fig.suptitle(title, va='bottom', y=.99)#, fontsize=14)

@@ -1,6 +1,6 @@
 from __future__ import print_function
 from __future__ import division
-from . import C_
+from . import _C
 
 import numpy as np
 import random
@@ -14,6 +14,13 @@ from .lc_classes import diff_vector
 import pandas as pd
 from copy import copy
 from fuzzytools.boostraping import BalancedCyclicBoostraping
+
+MIN_POINTS_LIGHTCURVE_DEFINITION = _C.MIN_POINTS_LIGHTCURVE_DEFINITION
+SET_NAME_STR = _C.SET_NAME_STR
+SET_NAME_STR = _C.SET_NAME_STR
+DAYS_INDEX = _C.DAYS_INDEX
+OBS_INDEX = _C.OBS_INDEX
+OBSE_INDEX = _C.OBSE_INDEX
 
 ###################################################################################################################################################
 
@@ -233,7 +240,7 @@ class LCSet():
 		return [self[lcobj_name] for lcobj_name in self.get_lcobj_names(c)]
 
 	def clean_empty_obs_keys(self,
-		length_to_keep=C_.MIN_POINTS_LIGHTCURVE_DEFINITION,
+		length_to_keep=MIN_POINTS_LIGHTCURVE_DEFINITION,
 		verbose:int=0,
 		):
 		lcobj_names = self.get_lcobj_names()
@@ -301,7 +308,7 @@ class LCSet():
 				lcobjs = self.get_lcobjs(c)
 				info_dict[f'{c}{b}-$N_c$'] = sum([len(lcobj.get_b(b)) for lcobj in lcobjs])/len(lcobjs)
 			df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
-			df.index.rename(C_.SET_NAME_STR, inplace=True)
+			df.index.rename(SET_NAME_STR, inplace=True)
 			df_bdict[b] = df
 
 		return df_bdict
@@ -314,7 +321,7 @@ class LCSet():
 			lcobjs = self.get_lcobjs(c)
 			info_dict[f'{c}-$N_c$'] = len(lcobjs)
 		df = pd.DataFrame.from_dict({id(self) if index is None else index:info_dict}, orient='index')
-		df.index.rename(C_.SET_NAME_STR, inplace=True)
+		df.index.rename(SET_NAME_STR, inplace=True)
 		return df, self.get_mean_length_df_bdict()
 
 	def get_serial_stats_idf_c(self, c):
@@ -322,10 +329,10 @@ class LCSet():
 		if len(lcobjs)>0:
 			xs = [lcobj.get_x_serial() for lcobj in lcobjs]
 			info_dict = {
-				f'{c}-$x$':XError(np.concatenate([x[:,C_.OBS_INDEX] for x in xs])),
+				f'{c}-$x$':XError(np.concatenate([x[:,OBS_INDEX] for x in xs])),
 				f'{c}-$L$':XError([len(lcobj) for lcobj in lcobjs]),
 				f'{c}-$\Delta T$':XError([lcobj.get_days_serial_duration() for lcobj in lcobjs]),
-				f'{c}-$\Delta t$':XError(np.concatenate([diff_vector(x[:,C_.DAYS_INDEX]) for x in xs])),
+				f'{c}-$\Delta t$':XError(np.concatenate([diff_vector(x[:,DAYS_INDEX]) for x in xs])),
 			}
 		else:
 			info_dict = {
@@ -345,7 +352,7 @@ class LCSet():
 
 		info_dict = {id(self) if index is None else index:info_dict}
 		df = pd.DataFrame.from_dict(info_dict, orient='index').reindex(list(info_dict.keys()))
-		df.index.rename(C_.SET_NAME_STR, inplace=True)
+		df.index.rename(SET_NAME_STR, inplace=True)
 		return df
 
 	def get_bstats_idf_c(self, c, b,
@@ -370,7 +377,7 @@ class LCSet():
 		
 		info_dict = {id(self) if index is None else index:info_dict}
 		df = pd.DataFrame.from_dict(info_dict, orient='index').reindex(list(info_dict.keys()))
-		df.index.rename(C_.SET_NAME_STR, inplace=True)
+		df.index.rename(SET_NAME_STR, inplace=True)
 		return df
 
 	def get_bstats_idf(self, b,

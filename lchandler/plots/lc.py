@@ -1,11 +1,11 @@
 from __future__ import print_function
 from __future__ import division
-from . import C_
+from . import _C
 
 import numpy as np
 import matplotlib.pyplot as plt
 from fuzzytools.strings import get_string_from_dict
-import fuzzytools.cuteplots.bars as bars
+import fuzzytools.matplotlib.bars as bars
 
 ###################################################################################################################################################
 
@@ -23,6 +23,7 @@ def plot_lightcurve(ax, lcobj, b, label,
 	capsize:int=0,
 	x_margin_offset_percent:float=1,
 	y_margin_offset_percent:float=10,
+	label_len=True,
 	label_snr=True,
 	):
 	lcobjb = lcobj.get_b(b) if not b is None else lcobj
@@ -31,17 +32,18 @@ def plot_lightcurve(ax, lcobj, b, label,
 	new_days = new_days[valid_indexs]
 	obs = lcobjb.obs[valid_indexs]
 	obse = lcobjb.obse[valid_indexs]
-	color = C_.COLOR_DICT[b] if not b is None else 'k'
+	color = _C.COLOR_DICT[b] if not b is None else 'k'
 	bars.plot_norm_percentile_bar(ax, new_days, obs, obse, color=color)
 	ax.plot(new_days, obs, ':', color=color, alpha=0.25*alpha)
 
-	synth_label = ' [synth]' if lcobjb.is_synthetic() else ''
 	extra_label = []
 	extra_label += [f'snr={lcobjb.get_snr():.3f}'] if label_snr else []
 	extra_label = f' {"; ".join(extra_label)}' if len(extra_label)>0 else ''
+	synth_label = ' [synth]' if lcobjb.is_synthetic() else ''
+	len_label = f' ({len(obs):,}#)' if label_len else ''
 	ax.plot(new_days, obs, 'o',
 		color=color,
-		label=f'{label}{synth_label}{extra_label} ({len(obs):,}#)' if not label is None else None,
+		label=f'{label};{extra_label}{len_label}{synth_label}' if not label is None else None,
 		alpha=alpha,
 		markeredgecolor='k' if lcobjb.is_synthetic() else None,
 		)

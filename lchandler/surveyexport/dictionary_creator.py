@@ -1,6 +1,6 @@
 from __future__ import print_function
 from __future__ import division
-from . import C_
+from . import _C
 
 import numpy as np
 from dask import dataframe as dd
@@ -17,14 +17,23 @@ import lchandler.lc_classes as lcc
 import pandas as pd
 import copy
 
+DEFAULT_ZP = _C.DEFAULT_ZP
+DEFAULT_FLUX_SCALE = _C.DEFAULT_FLUX_SCALE
+DAYS_INDEX = _C.DAYS_INDEX
+OBS_INDEX = _C.OBS_INDEX
+OBSE_INDEX = _C.OBSE_INDEX
+N_JOBS = _C.N_JOBS
+MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT = _C.MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT
+EXT_RAW_LIGHTCURVE = _C.EXT_RAW_LIGHTCURVE
+
 ###################################################################################################################################################
 
 class LightCurveDictionaryCreator():
 	def __init__(self, survey_name:str, detections_df:pd.DataFrame, labels_df:pd.DataFrame, band_dictionary:dict, df_index_names:dict,
 		dataframe_obs_uses_flux:bool=True,
 		label_to_class_dict:dict=None,
-		zero_point:float=C_.DEFAULT_ZP,
-		flux_scale:float=C_.DEFAULT_FLUX_SCALE,
+		zero_point:float=DEFAULT_ZP,
+		flux_scale:float=DEFAULT_FLUX_SCALE,
 		):
 		'''
 		zero_point: used if dataframe_obs_uses_flux is False, to transform to flux
@@ -47,7 +56,8 @@ class LightCurveDictionaryCreator():
 
 	def __repr__(self):
 		labels_names, counts = np.unique(self.raw_labels_df[self.df_index_names['label']].values, return_counts=True)
-		txt = LevelBar({l:c for l,c in zip(labels_names, counts)}, ncols=70).__repr__()
+		level_bar = LevelBar({l:c for l,c in zip(labels_names, counts)}, ncols=70)
+		txt = str(level_bar)
 		return txt
 
 	def generate_label_to_class_dict(self):
@@ -64,7 +74,7 @@ class LightCurveDictionaryCreator():
 
 	def get_classes_from_df(self):
 		labels_names, counts = np.unique(self.labels_df[self.df_index_names['label']].values, return_counts=True)
-		#print(f'labels_names={labels_names} - counts={counts}')
+		#print(f'labels_names={labels_names}; counts={counts}')
 		class_names = [self.label_to_class_dict.get(label, label) for label in labels_names]
 		return class_names, labels_names, len(class_names)
 
@@ -140,18 +150,18 @@ class LightCurveDictionaryCreator():
 			return None, None
 
 	def get_band(self, curve):
-		indexs = np.argsort(curve[:,C_.DAYS_INDEX]) # need to be sorted
+		indexs = np.argsort(curve[:,DAYS_INDEX]) # need to be sorted
 		curve = curve[indexs]
 
 		if self.dataframe_obs_uses_flux:
 			return curve
 		else:
-			mag = curve[:,C_.OBS_INDEX]
-			mag_error = curve[:,C_.OBSE_INDEX]
+			mag = curve[:,OBS_INDEX]
+			mag_error = curve[:,OBSE_INDEX]
 			flux = get_flux_from_magnitude(mag, self.zero_point, self.flux_scale)
 			flux_error = get_flux_error_from_magnitude(mag, mag_error, self.zero_point, self.flux_scale)
-			curve[:,C_.OBS_INDEX] = flux
-			curve[:,C_.OBSE_INDEX] = flux_error
+			curve[:,OBS_INDEX] = flux
+			curve[:,OBSE_INDEX] = flux_error
 			return curve
 
 	###################################################################################################################################################
@@ -159,8 +169,8 @@ class LightCurveDictionaryCreator():
 	def export_dictionary(self, description:str, save_folder:str,
 		band_names:list=None,
 		filename_extra_parameters:dict={},
-		npartitions:int=C_.N_JOBS,
-		any_band_points=C_.MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT,
+		npartitions:int=N_JOBS,
+		any_band_points=MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT,
 		outliers_df=None,
 		):
 		class_dfkey = self.df_index_names['label']
@@ -172,7 +182,7 @@ class LightCurveDictionaryCreator():
 
 		### clean dataframe to speed up thing in the objects search
 		detections_df = self.detections_df.reset_index()
-		print(f'cleaning the DataFrame - samples={len(detections_df):,}')
+		print(f'cleaning the DataFrame; samples={len(detections_df):,}')
 		#print('detections_df',detections_df[detections_df[self.df_index_names['oid']]=='ZTF17aabwgdw'])
 
 		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
@@ -208,7 +218,7 @@ class LightCurveDictionaryCreator():
 			'bands':''.join(band_names),
 		}
 		filename_parameters.update(filename_extra_parameters)
-		save_filedir = f'{save_folder}/{self.get_dict_name(filename_parameters)}.{C_.EXT_RAW_LIGHTCURVE}'
+		save_filedir = f'{save_folder}/{self.get_dict_name(filename_parameters)}.{EXT_RAW_LIGHTCURVE}'
 		print(f'save_filedir={save_filedir}')
 
 		### easy variables
@@ -245,17 +255,18 @@ class LightCurveDictionaryCreator():
 					ra, dec = self.get_radec(self.labels_df, lcobj_name)
 					lcobj.ra = ra
 					lcobj.dec = dec
-					lcset_name = 'raw'
 					if lcobj_name in outliers:
 						lcset_name = 'outliers'
-					elif lcobj.get_snr()<C_.MIN_SNR:
-						lcset_name = 'faint'
+					# elif lcobj.get_snr()<MIN_SNR:
+					# 	lcset_name = 'faint'
+					else:
+						lcset_name = 'raw'
 					lcdataset[lcset_name].set_lcobj(lcobj_name, lcobj)
 					correct_samples += 1
 				else:
 					pass
 					#print(lcobj_name)
-				bar(f'obj={lcobj_name} - y={y} - c={self.class_names[y]} - lengths_bdict={lcobj.get_length_bdict()} - correct_samples (any-band>={any_band_points})={correct_samples:,}')
+				bar(f'obj={lcobj_name}; y={y}; c={self.class_names[y]}; lengths_bdict={lcobj.get_length_bdict()}; correct_samples (any-band>={any_band_points})={correct_samples:,}')
 					
 			except KeyboardInterrupt:
 				bar.done()

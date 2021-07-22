@@ -18,7 +18,7 @@ print_big_bar()
 import numpy as np
 import fuzzytools.lists as lists
 from fuzzytools.files import load_pickle, save_pickle, get_dict_from_filedir
-from fuzzytools.cuteplots.utils import save_fig
+from fuzzytools.matplotlib.utils import save_fig
 import matplotlib.pyplot as plt
 from lchandler.plots.lc import plot_lightcurve
 from fuzzytools.files import save_time_stamp
@@ -28,6 +28,7 @@ methods = [methods] if isinstance(methods, str) else methods
 
 for method in methods:
 	filedir = f'../../surveys-save/survey=alerceZTFv7.1~bands=gr~mode=onlySNe~method={method}.splcds'
+	# filedir = f'../../surveys-save/survey=alerceZTFv7.1~bands=gr~mode=onlySNe.splcds'
 	filedict = get_dict_from_filedir(filedir)
 	rootdir = filedict['_rootdir']
 	cfilename = filedict['_cfilename']

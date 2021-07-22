@@ -1,11 +1,13 @@
 from __future__ import print_function
 from __future__ import division
-from . import C_
+from . import _C
 
 import numpy as np
 import pandas as pd
 from dask import dataframe as dd
 import warnings
+
+N_JOBS = _C.N_JOBS
 
 ###################################################################################################################################################
 
@@ -20,7 +22,7 @@ def subset_df_columns(df, subset_cols):
 
 def delete_invalid_detections(df, index_name,
 	uses_corr:True,
-	npartitions=C_.N_JOBS,
+	npartitions=N_JOBS,
 	):
 	days_col = 'mjd'
 	obs_col = 'magpsf_corr' if uses_corr else 'magpsf'
@@ -44,7 +46,7 @@ def delete_invalid_detections(df, index_name,
 	return df
 
 def delete_invalid_objs(df, new_index_name,
-	npartitions=C_.N_JOBS,
+	npartitions=N_JOBS,
 	):
 	df = df.set_index([new_index_name])
 	ddf = dd.from_pandas(df, npartitions=npartitions)
@@ -57,13 +59,13 @@ def keep_only_valid_objs(df, valid_objs):
 	return df[df.index.isin(valid_objs)]
 
 def drop_duplicates_mjd(df, new_index_name,
-	npartitions=C_.N_JOBS,
+	npartitions=N_JOBS,
 	):
 	ddf = dd.from_pandas(df, npartitions=npartitions)
 	return ddf.drop_duplicates(subset=[new_index_name, 'fid','mjd']).compute() # FAST
 
 def drop_duplicates(df,
-	npartitions=C_.N_JOBS,
+	npartitions=N_JOBS,
 	):
 	ddf = dd.from_pandas(df, npartitions=npartitions)
 	return ddf.drop_duplicates().compute() # FAST
@@ -72,7 +74,7 @@ def drop_duplicates(df,
 
 def process_df_detections(df, index_name, new_index_name, detections_cols,
 	uses_corr=True,
-	npartitions=C_.N_JOBS,
+	npartitions=N_JOBS,
 	clean_detections=True,
 	clean_invalid_objs=False,
 	):

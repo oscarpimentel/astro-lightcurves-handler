@@ -1,10 +1,10 @@
 from __future__ import print_function
 from __future__ import division
-from . import C_
+from . import _C
 
 import numpy as np
 import matplotlib.pyplot as plt
-from fuzzytools.cuteplots import colors as cc
+from fuzzytools.matplotlib import colors as cc
 
 ###################################################################################################################################################
 
@@ -45,8 +45,8 @@ def plot_obs_obse_scatter(lcdataset, lcset_names,
 			ax.grid(alpha=0.25)
 
 			### multiband colors
-			#ax.grid(color=C_.COLOR_DICT[b])
-			[ax.spines[border].set_color(C_.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
+			#ax.grid(color=_C.COLOR_DICT[b])
+			[ax.spines[border].set_color(_C.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
 			[ax.spines[border].set_linewidth(2) for border in ['bottom', 'top', 'right', 'left']]
 
 	title = ''
