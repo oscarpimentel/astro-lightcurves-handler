@@ -7,7 +7,7 @@ import random
 from scipy.stats import t
 from copy import copy, deepcopy
 from fuzzytools import numba as ftnumba
-import flux_magnitude as flux_magnitude
+from . import flux_magnitude as flux_magnitude
 
 DF = 2 # 1 2 5 np.inf
 OBSE_STD_SCALE = 1/2
