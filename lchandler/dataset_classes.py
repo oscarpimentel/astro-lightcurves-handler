@@ -373,6 +373,7 @@ class LCSet():
 				f'{c}-$L$':XError([]),
 				f'{c}-$\Delta T$':XError([]),
 				f'{c}-$\Delta t$':XError([]),
+				f'{c}-tmax':XError([]),
 			}
 		
 		info_dict = {id(self) if index is None else index:info_dict}

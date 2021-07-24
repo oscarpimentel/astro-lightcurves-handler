@@ -71,9 +71,6 @@ class SubLCO():
 		self.set_synthetic_mode(None)
 
 	def convert_to_magnitude(self):
-		if not hasattr(self, 'flux_type'): # fixme
-			self.flux_type = True
-
 		if self.flux_type:
 			flux = copy(self.obs)
 			flux_error = copy(self.obse)
@@ -84,9 +81,6 @@ class SubLCO():
 			pass
 
 	def convert_to_flux(self):
-		if not hasattr(self, 'flux_type'): # fixme
-			self.flux_type = True
-
 		if self.flux_type:
 			pass
 		else:
@@ -431,9 +425,6 @@ class SubLCO():
 	def get_max_brightness(self,
 		return_idx=False,
 		):
-		if not hasattr(self, 'flux_type'): # fixme
-			self.flux_type = True
-
 		idx = None,
 		max_brightness = np.nan
 		if len(self)>0:

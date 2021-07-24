@@ -8,7 +8,7 @@ from fuzzytools.progress_bars import ProgressBar
 from fuzzytools.level_bars import LevelBar
 import matplotlib.pyplot as plt
 from fuzzytools.files import save_pickle, load_pickle
-import fuzzytools.cuteplots.colors as cc
+import fuzzytools.matplotlib.colors as cc
 from ..flux_magnitude import get_flux_from_magnitude, get_flux_error_from_magnitude
 from ..flux_magnitude import get_magnitude_from_flux, get_magnitude_error_from_flux
 from ..plots.dataframe import plot_class_distribution_df

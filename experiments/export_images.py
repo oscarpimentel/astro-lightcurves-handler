@@ -27,8 +27,8 @@ methods = ['linear-fstw', 'bspline-fstw', 'spm-mle-fstw', 'spm-mle-estw', 'spm-m
 methods = [methods] if isinstance(methods, str) else methods
 
 for method in methods:
-	filedir = f'../../surveys-save/survey=alerceZTFv7.1~bands=gr~mode=onlySNe~method={method}.splcds'
-	# filedir = f'../../surveys-save/survey=alerceZTFv7.1~bands=gr~mode=onlySNe.splcds'
+	# filedir = f'../../surveys-save/survey=alerceZTFv7.1~bands=gr~mode=onlySNe~method={method}.splcds'
+	filedir = f'../../surveys-save/survey=alerceZTFv7.1~bands=gr~mode=onlySNe.splcds'
 	filedict = get_dict_from_filedir(filedir)
 	rootdir = filedict['_rootdir']
 	cfilename = filedict['_cfilename']
