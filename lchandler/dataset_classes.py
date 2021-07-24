@@ -365,7 +365,7 @@ class LCSet():
 				f'{c}-$L$':XError([len(lcobj.get_b(b)) for lcobj in lcobjs]),
 				f'{c}-$\Delta T$':XError([lcobj.get_b(b).get_days_duration() for lcobj in lcobjs if len(lcobj.get_b(b))>=1]),
 				f'{c}-$\Delta t$':XError(np.concatenate([lcobj.get_b(b).get_diff('days') for lcobj in lcobjs])),
-				f'{c}-tmax':XError([lcobj.get_b(b).get_tmax() for lcobj in lcobjs if not np.isnan(lcobj.get_b(b).get_tmax())]),
+				f'{c}-tmax':XError([lcobj.get_b(b).get_max_brightness_time() for lcobj in lcobjs if not np.isnan(lcobj.get_b(b).get_max_brightness_time())]),
 			}
 		else:
 			info_dict = {
