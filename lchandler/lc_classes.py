@@ -79,8 +79,12 @@ class SubLCO():
 			flux_error = copy(self.obse)
 			self._set_obs(flux_magnitude.get_magnitude_from_flux(flux))
 			self._set_obs(flux_magnitude.get_magnitude_error_from_flux(flux, flux_error))
+			self.flux_type = False
 		else:
 			pass
+
+	def convert_to_flux(self):
+		assert 0
 
 	def get_synthetic_mode(self):
 		return self.synthetic_mode
