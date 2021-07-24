@@ -7,6 +7,7 @@ import random
 from scipy.stats import t
 from copy import copy, deepcopy
 from fuzzytools import numba as ftnumba
+import flux_magnitude as flux_magnitude
 
 DF = 2 # 1 2 5 np.inf
 OBSE_STD_SCALE = 1/2
@@ -68,6 +69,18 @@ class SubLCO():
 	def reset(self):
 		self.set_values(self.days, self.obs, self.obse)
 		self.set_synthetic_mode(None)
+
+	def convert_to_magnitude(self):
+		if not hasattr(self, 'flux_type'): # fixme
+			self.flux_type = True
+
+		if self.flux_type:
+			flux = copy(self.obs)
+			flux_error = copy(self.obse)
+			self._set_obs(flux_magnitude.get_magnitude_from_flux(flux))
+			self._set_obs(flux_magnitude.get_magnitude_error_from_flux(flux, flux_error))
+		else:
+			pass
 
 	def get_synthetic_mode(self):
 		return self.synthetic_mode
@@ -403,7 +416,7 @@ class SubLCO():
 		):
 		if not hasattr(self, 'flux_type'): # fixme
 			self.flux_type = True
-			
+
 		idx = None,
 		max_brightness = np.nan
 		if len(self)>0:
@@ -418,7 +431,13 @@ class SubLCO():
 		else:
 			return max_brightness
 
-	def get_tmax(self):
+	def get_mean_brightness(self):
+		if len(self)==0:
+			return np.nan
+		else:
+			return np.mean(self.obs)
+
+	def get_max_brightness_time(self):
 		if len(self)==0:
 			return np.nan
 		else:
@@ -481,6 +500,10 @@ class LCO():
 
 	def reset(self):
 		self.bands = []
+
+	def convert_to_magnitude(self):
+		for b in self.bands:
+			self.get_b(b).convert_to_magnitude()
 
 	def add_b(self, b:str, days, obs, obse):
 		'''
