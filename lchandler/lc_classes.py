@@ -84,6 +84,19 @@ class SubLCO():
 			pass
 
 	def convert_to_flux(self):
+		if not hasattr(self, 'flux_type'): # fixme
+			self.flux_type = True
+
+		if self.flux_type:
+			pass
+		else:
+			mag = copy(self.obs)
+			mag_error = copy(self.obse)
+			self._set_obs(flux_magnitude.get_flux_from_magnitude(mag))
+			self._set_obse(flux_magnitude.get_flux_error_from_magnitude(mag, mag_error))
+			self.flux_type = True
+
+	def convert_to_flux(self):
 		assert 0
 
 	def get_synthetic_mode(self):
@@ -508,6 +521,10 @@ class LCO():
 	def convert_to_magnitude(self):
 		for b in self.bands:
 			self.get_b(b).convert_to_magnitude()
+
+	def convert_to_flux(self):
+		for b in self.bands:
+			self.get_b(b).convert_to_flux()
 
 	def add_b(self, b:str, days, obs, obse):
 		'''
