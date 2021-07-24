@@ -55,12 +55,14 @@ class SubLCO():
 	def __init__(self, days, obs, obse,
 		y:int=None,
 		dtype=np.float32,
+		flux_type=True,
 		):
 		self.days = days
 		self.obs = obs
 		self.obse = obse
 		self.y = y
 		self.dtype = dtype
+		self.flux_type = flux_type
 		self.reset()
 
 	def reset(self):
@@ -379,17 +381,46 @@ class SubLCO():
 			snr = (self.obs[:max_len]**2)/(alpha*self.obse[:max_len]**2+beta)
 			return np.mean(snr)
 
-	def get_max(self):
-		if len(self)==0:
-			return np.nan
+	def get_min_brightness(self,
+		return_idx=False,
+		):
+		idx = None,
+		min_brightness = np.nan
+		if len(self)>0:
+			if self.flux_type:
+				idx = np.argmin(self.obs)
+			else:
+				idx = np.argmax(self.obs)
+			min_brightness = self.obs[idx]
+
+		if return_idx:
+			return min_brightness, idx
 		else:
-			return np.max(self.obs)
+			return min_brightness
+
+	def get_max_brightness(self,
+		return_idx=False,
+		):
+		idx = None,
+		max_brightness = np.nan
+		if len(self)>0:
+			if self.flux_type:
+				idx = np.argmax(self.obs)
+			else:
+				idx = np.argmin(self.obs)
+			max_brightness = self.obs[idx]
+
+		if return_idx:
+			return max_brightness, idx
+		else:
+			return max_brightness
 
 	def get_tmax(self):
 		if len(self)==0:
 			return np.nan
 		else:
-			tmax = self.days[np.argmax(self.obs)]
+			_, idx = self.get_max_brightness(return_idx=True)
+			tmax = self.days[idx]
 			return tmax
 
 	def __add__(self, other):
