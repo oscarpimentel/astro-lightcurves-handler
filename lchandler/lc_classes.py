@@ -78,7 +78,7 @@ class SubLCO():
 			flux = copy(self.obs)
 			flux_error = copy(self.obse)
 			self._set_obs(flux_magnitude.get_magnitude_from_flux(flux))
-			self._set_obs(flux_magnitude.get_magnitude_error_from_flux(flux, flux_error))
+			self._set_obse(flux_magnitude.get_magnitude_error_from_flux(flux, flux_error))
 			self.flux_type = False
 		else:
 			pass

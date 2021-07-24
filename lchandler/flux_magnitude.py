@@ -15,11 +15,14 @@ CLIP_EPS = 1e-16
 def get_flux_from_magnitude(mag:np.ndarray,
 	zero_point:float=DEFAULT_ZP,
 	scale:float=DEFAULT_FLUX_SCALE,
+	verbose=0,
 	):
 	assert np.all(mag>=0)
 	flux = 10**(-(mag+zero_point)/2.5) # return 10 ** (-(mag + 48.6) / 2.5 + 26.0)
 	flux = flux*scale
 	assert np.all(flux>=0)
+	# print(f'{mag}>{flux}>{get_magnitude_from_flux(flux)}')
+	# assert 0
 	return flux
 
 def get_flux_error_from_magnitude(mag:np.ndarray, mag_error:np.ndarray,
@@ -45,6 +48,7 @@ def get_magnitude_from_flux(flux:np.ndarray,
 	zero_point:float=DEFAULT_ZP,
 	scale:float=DEFAULT_FLUX_SCALE,
 	clip_eps=CLIP_EPS,
+	verbose=0,
 	):
 	assert np.all(flux>=0)
 	new_flux = flux if clip_eps is None else np.clip(flux, clip_eps, None) 
