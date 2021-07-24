@@ -401,6 +401,9 @@ class SubLCO():
 	def get_max_brightness(self,
 		return_idx=False,
 		):
+		if not hasattr(self, 'flux_type'): # fixme
+			self.flux_type = True
+			
 		idx = None,
 		max_brightness = np.nan
 		if len(self)>0:
