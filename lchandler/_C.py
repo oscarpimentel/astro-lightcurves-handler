@@ -4,7 +4,7 @@ import numpy as np
 EPS = 1e-5
 
 DEFAULT_ZP = 48.6
-DEFAULT_FLUX_SCALE = 1e26 # 1e0, 1e26
+DEFAULT_FLUX_SCALE = 1e26 # 1e26
 CHECK = False
 N_JOBS = -1
 

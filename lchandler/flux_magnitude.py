@@ -17,7 +17,9 @@ def get_flux_from_magnitude(mag:np.ndarray,
 	scale:float=DEFAULT_FLUX_SCALE,
 	):
 	assert np.all(mag>=0)
-	flux = (10**(-(mag+zero_point)/2.5))*scale
+	flux = 10**(-(mag+zero_point)/2.5) # return 10 ** (-(mag + 48.6) / 2.5 + 26.0)
+	flux = flux*scale
+	assert np.all(flux>=0)
 	return flux
 
 def get_flux_error_from_magnitude(mag:np.ndarray, mag_error:np.ndarray,
@@ -46,7 +48,8 @@ def get_magnitude_from_flux(flux:np.ndarray,
 	):
 	assert np.all(flux>=0)
 	new_flux = flux if clip_eps is None else np.clip(flux, clip_eps, None) 
-	mag = -2.5*np.log10(new_flux/scale)-zero_point
+	mag = -2.5*np.log10(new_flux/scale)-zero_point # inverse
+	assert np.all(mag>=0)
 	return mag
 
 def get_magnitude_error_from_flux(flux:np.ndarray, flux_error:np.ndarray,
