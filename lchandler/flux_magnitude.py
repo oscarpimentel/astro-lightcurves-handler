@@ -6,7 +6,6 @@ import numpy as np
 
 DEFAULT_ZP = _C.DEFAULT_ZP
 DEFAULT_FLUX_SCALE = _C.DEFAULT_FLUX_SCALE
-DEFAULT_MAG_SCALE = _C.DEFAULT_MAG_SCALE
 EPS = 1e-10
 
 # http://slittlefair.staff.shef.ac.uk/teaching/phy217/lectures/stats/L18/index.html
@@ -34,18 +33,18 @@ def get_flux_error_from_magnitude(mag:np.ndarray, mag_error:np.ndarray,
 
 def get_magnitude_from_flux(flux:np.ndarray,
 	zero_point:float=DEFAULT_ZP,
-	scale:float=DEFAULT_MAG_SCALE,
+	scale:float=DEFAULT_FLUX_SCALE,
 	clip_flux:bool=False,
 	eps=EPS,
 	):
 	assert np.all(flux>=0)
 	new_flux = np.clip(flux, eps, None) if clip_flux else flux
-	mag = (-2.5*np.log10(new_flux)+zero_point)*scale
+	mag = -2.5*np.log10(new_flux/scale)+zero_point
 	return mag
 
 def get_magnitude_error_from_flux(flux:np.ndarray, flux_error:np.ndarray,
 	zero_point:float=DEFAULT_ZP,
-	scale:float=DEFAULT_MAG_SCALE,
+	scale:float=DEFAULT_FLUX_SCALE,
 	clip_flux:bool=False,
 	):
 	assert np.all(flux>=0)
