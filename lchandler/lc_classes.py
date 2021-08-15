@@ -383,7 +383,6 @@ class SubLCO():
 			elif mode=='expectation':
 				obse_exp = np.exp(-np.log(self.obse[ddict[k]]+_C.EPS))
 				assert len(np.where(obse_exp==np.inf)[0])==0
-				#print(obse_exp, obse_exp.shape)
 				dist = obse_exp/obse_exp.sum()
 				new_days.append(np.sum(self.days[ddict[k]]*dist))
 				new_obs.append(np.sum(self.obs[ddict[k]]*dist))
