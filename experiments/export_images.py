@@ -42,7 +42,8 @@ for method in methods:
 		for lcobj_name in lcset.get_lcobj_names():
 			print(f'method={method}; lcset_name={lcset_name}; lcobj_name={lcobj_name}')
 			figsize = (12,5)
-			fig, ax = plt.subplots(1,1, figsize=figsize)
+			dpi = 200
+			fig, ax = plt.subplots(1,1, figsize=figsize, dpi=dpi)
 			lcobj = lcset[lcobj_name]
 			c = lcset.class_names[lcobj.y]
 			for kb,b in enumerate(lcset.band_names):
