@@ -529,12 +529,12 @@ class LCSet():
 				reset_time_offset=reset_time_offset,
 				)
 
-	def update_all_merged_band(self,
+	def generate_all_merged_band(self,
 		reset_time_offset=RESET_TIME_OFFSET,
 		target_class=None,
 		):
 		for lcobj in self.get_class_lcobjs(target_class):
-			lcobj.update_merged_band(
+			lcobj.generate_merged_band(
 				reset_time_offset=reset_time_offset,
 				)
 

@@ -17,7 +17,6 @@ MIN_POINTS_LIGHTCURVE_DEFINITION = _C.MIN_POINTS_LIGHTCURVE_DEFINITION
 CADENCE_THRESHOLD = _C.CADENCE_THRESHOLD
 EPS = _C.EPS
 RESET_TIME_OFFSET = True
-SERIAL_CHAR = _C.SERIAL_CHAR
 
 ###################################################################################################################################################
 
@@ -625,14 +624,11 @@ class LCO():
 		duration = np.max(serial_days)-np.min(serial_days)
 		return duration
 
-	def update_merged_band(self,
+	def generate_merged_band(self,
 		reset_time_offset=RESET_TIME_OFFSET,
 		):
-		lcs = [self.get_b(b) for b in self.bands]
-		merged_band = sum(lcs)
-		self.add_sublcobj_b(SERIAL_CHAR, merged_band)
-		if reset_time_offset:
-			self.reset_day_offset_serial()
+		self.merged_band = sum([self.get_b(b) for b in self.bands])
+		return self.merged_band
 
 	def get_b(self, b:str):
 		return getattr(self, b)
