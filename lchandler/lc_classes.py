@@ -17,6 +17,7 @@ MIN_POINTS_LIGHTCURVE_DEFINITION = _C.MIN_POINTS_LIGHTCURVE_DEFINITION
 CADENCE_THRESHOLD = _C.CADENCE_THRESHOLD
 EPS = _C.EPS
 RESET_TIME_OFFSET = True
+SERIAL_CHAR = _C.SERIAL_CHAR
 
 ###################################################################################################################################################
 
@@ -541,112 +542,73 @@ class LCO():
 		return sum([len(self.get_b(b)) for b in self.bands])
 
 	### serial/multi-band important methods
-	def add_first_day(self, first_day,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		for b in bands:
+	def add_first_day(self, first_day):
+		for b in self.bands:
 			self.get_b(b).days = self.get_b(b).days+first_day
 
-	def compute_global_first_day(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		first_days = [self.get_b(b).get_first_day() for b in bands if len(self.get_b(b))>0]
+	def compute_global_first_day(self):
+		first_days = [self.get_b(b).get_first_day() for b in self.bands  if len(self.get_b(b))>0]
 		assert len(first_days)>0
 		global_first_day = min(first_days)
 		return global_first_day
 
-	def reset_day_offset_serial(self,
-		bands=None,
-		):
+	def reset_day_offset_serial(self):
 		'''
 		delete day offset acording to the first day along any day!
 		'''
-		bands = self.bands if bands is None else bands
-		global_first_day = self.compute_global_first_day(
-			bands=bands,
-			)
-		self.add_first_day(-global_first_day,
-			bands,
-			)
+		global_first_day = self.compute_global_first_day()
+		self.add_first_day(-global_first_day)
 		return self
 
-	def get_sorted_days_indexs_serial(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		values = [self.get_b(b).days for b in bands]
+	def get_sorted_days_indexs_serial(self):
+		values = [self.get_b(b).days for b in self.bands]
 		all_days = np.concatenate(values, axis=0)
 		sorted_days_indexs = np.argsort(all_days)
 		return sorted_days_indexs
 
-	def get_onehot_serial(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		onehot = np.zeros((len(self), len(bands)), dtype=np.bool)
+	def get_onehot_serial(self):
+		onehot = np.zeros((len(self), len(self.bands)), dtype=np.bool)
 		index = 0
-		for kb,b in enumerate(bands):
+		for kb,b in enumerate(self.bands):
 			l = len(getattr(self, b))
 			onehot[index:index+l,kb] = True
 			index += l
-		sorted_days_indexs = self.get_sorted_days_indexs_serial(bands)
+		sorted_days_indexs = self.get_sorted_days_indexs_serial()
 		onehot = onehot[sorted_days_indexs]
 		return onehot
 
 	def get_x_serial(self,
 		attrs=['days', 'obs', 'obse'],
-		bands=None,
 		):
-		bands = self.bands if bands is None else bands
-		values = [self.get_b(b).get_custom_x(attrs) for b in bands]
+		values = [self.get_b(b).get_custom_x(attrs) for b in self.bands]
 		x = np.concatenate(values, axis=0)
-		sorted_days_indexs = self.get_sorted_days_indexs_serial(bands)
+		sorted_days_indexs = self.get_sorted_days_indexs_serial()
 		x = x[sorted_days_indexs]
 		return x
 
-	def get_serial_days(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		serial_days = self.get_x_serial(['days'],
-			bands=bands,
-			)
+	def get_serial_days(self):
+		serial_days = self.get_x_serial(['days'])
 		return serial_days
 
-	def get_serial_diff_days(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		serial_days = self.get_serial_days(
-			bands=bands,
-			)[:,0]
+	def get_serial_diff_days(self):
+		serial_days = self.get_serial_days()[:,0]
 		serial_diff_days = diff_vector(serial_days,
 			uses_prepend=True,
 			prepended_value=None,
 			)
 		return serial_diff_days
 
-	def get_parallel_days(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
+	def get_parallel_days(self):
 		parallel_days = {}
-		for b in bands:
+		for b in self.bands:
 			days = self.get_b(b).days
 			parallel_days[b] = days
 		return parallel_days
 
-	def get_parallel_diff_days(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		global_first_day = self.compute_global_first_day(
-				bands=bands,
-				)
+	def get_parallel_diff_days(self):
+		global_first_day = self.compute_global_first_day()
 		parallel_diff_days = {}
-		for b in bands:
+		for b in self.bands :
 			days = self.get_b(b).days
 			diff_days = diff_vector(days,
 				uses_prepend=True,
@@ -655,18 +617,22 @@ class LCO():
 			parallel_diff_days[b] = diff_days
 		return parallel_diff_days
 
-	def get_serial_days_duration(self,
-		bands=None,
-		):
+	def get_serial_days_duration(self):
 		'''
 		Duration in days of complete light curve
 		'''
-		bands = self.bands if bands is None else bands
-		serial_days = self.get_serial_days(
-			bands=bands,
-			)
+		serial_days = self.get_serial_days()
 		duration = np.max(serial_days)-np.min(serial_days)
 		return duration
+
+	def update_merged_band(self,
+		reset_time_offset=RESET_TIME_OFFSET,
+		):
+		lcs = [self.get_b(b) for b in self.bands]
+		merged_band = sum(lcs)
+		self.add_sublcobj_b(SERIAL_CHAR, merged_band)
+		if reset_time_offset:
+			self.reset_day_offset_serial()
 
 	def get_b(self, b:str):
 		return getattr(self, b)

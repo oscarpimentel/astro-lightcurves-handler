@@ -21,6 +21,7 @@ SET_NAME_STR = _C.SET_NAME_STR
 DAYS_INDEX = _C.DAYS_INDEX
 OBS_INDEX = _C.OBS_INDEX
 OBSE_INDEX = _C.OBSE_INDEX
+RESET_TIME_OFFSET = True
 
 ###################################################################################################################################################
 
@@ -470,36 +471,72 @@ class LCSet():
 		lcobj_names = self.get_lcobj_names()
 		return fstats.get_random_stratified_keys(lcobj_names, self.get_lcobj_classes(), self.class_names, nc)
 
-	def get_lcset_values_b(self, b:str, attr:str,
+	#########################
+
+	def get_class_lcobjs(self, target_class):
+		lcobjs = [lcobj for lcobj in self.get_lcobjs() if (target_class is None or target_class==self.class_names[lcobj.y])]
+		return lcobjs
+
+	def get_values_b(self, b:str, attr:str,
 		target_class:str=None,
 		):
-		values = [getattr(lcobj.get_b(b), attr) for lcobj in self.get_lcobjs() if (target_class is None or target_class==self.class_names[lcobj.y])]
+		values = [getattr(lcobj.get_b(b), attr) for lcobj in self.get_class_lcobjs(target_class)]
 		values = np.concatenate(values, axis=0)
 		return values
 
-	def get_lcset_max_value_b(self, b:str, attr,
-		target_class=None,
-		):
-		values = self.get_lcset_values_b(b, attr, target_class)
-		return max(values)
-
-	def get_lcset_values_serial(self, attr:str,
+	def get_all_values(self, attr:str,
 		target_class=None,
 		):
 		'''
 		Get values of attr along all bands
 		'''
-		values = [self.get_lcset_values_b(b, attr, target_class) for b in self.band_names]
+		values = [self.get_all_values_b(b, attr, target_class=target_class) for b in self.band_names]
 		return np.concatenate(values, axis=0)
 
-	def reset_day_offset_serial(self,
-		store_day_offset:bool=False,
+	def get_all_min_value_b(self, b:str, attr,
+		target_class=None,
 		):
-		'''
-		Along all keys
-		'''
-		for lcobj in self.get_lcobjs():
-			lcobj.reset_day_offset_serial(store_day_offset)
+		values = self.get_all_values_b(b, attr, target_class=target_class)
+		return min(values)
+
+	def get_all_max_value_b(self, b:str, attr,
+		target_class=None,
+		):
+		values = self.get_all_values_b(b, attr, target_class=target_class)
+		return max(values)
+
+	def get_all_parallel_diff_days_b(self, b,
+		target_class=None,
+		):
+		lcobjs = [lcobj for lcobj in self.get_lcobjs() if (target_class is None or target_class==self.class_names[lcobj.y])]
+		parallel_diff_days = []
+		for lcobj in self.get_class_lcobjs(target_class):
+			parallel_diff_days += [lcobj.get_parallel_diff_days()[b]]
+		return np.concatenate(parallel_diff_days, axis=0)
+
+	def get_all_parallel_diff_days(self,
+		target_class=None,
+		):
+		values = [self.get_all_parallel_diff_days_b(b, target_class=target_class) for b in self.band_names]
+		return np.concatenate(values, axis=0)
+
+	def reset_all_day_offset_serial(self,
+		reset_time_offset=RESET_TIME_OFFSET,
+		target_class=None,
+		):
+		for lcobj in self.get_class_lcobjs(target_class):
+			lcobj.reset_day_offset_serial(
+				reset_time_offset=reset_time_offset,
+				)
+
+	def update_all_merged_band(self,
+		reset_time_offset=RESET_TIME_OFFSET,
+		target_class=None,
+		):
+		for lcobj in self.get_class_lcobjs(target_class):
+			lcobj.update_merged_band(
+				reset_time_offset=reset_time_offset,
+				)
 
 	def __add__(self, other):
 		new = self.copy()
