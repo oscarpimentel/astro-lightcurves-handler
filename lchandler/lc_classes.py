@@ -624,14 +624,16 @@ class LCO():
 		duration = np.max(serial_days)-np.min(serial_days)
 		return duration
 
-	def generate_merged_band(self,
-		reset_time_offset=RESET_TIME_OFFSET,
-		):
-		self.merged_band = sum([self.get_b(b) for b in self.bands])
-		return self.merged_band
-
 	def get_b(self, b:str):
-		return getattr(self, b)
+		if b=='*':
+			return self.get_mb()
+		else:
+			return getattr(self, b)
+
+	def get_mb(self):
+		# ignore b
+		self.merged_band = sum([self.get_b(b) for b in self.bands]) # generate
+		return self.merged_band
 
 	def get_bands(self):
 		return self.bands
