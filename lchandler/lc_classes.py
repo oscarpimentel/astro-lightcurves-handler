@@ -494,6 +494,7 @@ class LCO():
 		self.add_sublcobj_b(b, sublcobj)
 
 	def add_sublcobj_b(self, b:str, sublcobj):
+		assert not b=='*'
 		setattr(self, b, sublcobj)
 		if not b in self.bands:
 			self.bands += [b]
@@ -546,7 +547,7 @@ class LCO():
 			self.get_b(b).days = self.get_b(b).days+first_day
 
 	def compute_global_first_day(self):
-		first_days = [self.get_b(b).get_first_day() for b in self.bands  if len(self.get_b(b))>0]
+		first_days = [self.get_b(b).get_first_day() for b in self.get_bands()  if len(self.get_b(b))>0]
 		assert len(first_days)>0
 		global_first_day = min(first_days)
 		return global_first_day
@@ -560,15 +561,15 @@ class LCO():
 		return self
 
 	def get_sorted_days_indexs_serial(self):
-		values = [self.get_b(b).days for b in self.bands]
+		values = [self.get_b(b).days for b in self.get_bands()]
 		all_days = np.concatenate(values, axis=0)
 		sorted_days_indexs = np.argsort(all_days)
 		return sorted_days_indexs
 
 	def get_onehot_serial(self):
-		onehot = np.zeros((len(self), len(self.bands)), dtype=np.bool)
+		onehot = np.zeros((len(self), len(self.get_bands())), dtype=np.bool)
 		index = 0
-		for kb,b in enumerate(self.bands):
+		for kb,b in enumerate(self.get_bands()):
 			l = len(getattr(self, b))
 			onehot[index:index+l,kb] = True
 			index += l
@@ -579,7 +580,7 @@ class LCO():
 	def get_x_serial(self,
 		attrs=['days', 'obs', 'obse'],
 		):
-		values = [self.get_b(b).get_custom_x(attrs) for b in self.bands]
+		values = [self.get_b(b).get_custom_x(attrs) for b in self.get_bands()]
 		x = np.concatenate(values, axis=0)
 		sorted_days_indexs = self.get_sorted_days_indexs_serial()
 		x = x[sorted_days_indexs]
@@ -599,15 +600,22 @@ class LCO():
 
 	def get_parallel_days(self):
 		parallel_days = {}
-		for b in self.bands:
+		for b in self.get_bands():
 			days = self.get_b(b).days
 			parallel_days[b] = days
 		return parallel_days
 
-	def get_parallel_diff_days(self):
+	def get_parallel_diff_days(self,
+		generates_mb=True,
+		):
 		global_first_day = self.compute_global_first_day()
 		parallel_diff_days = {}
-		for b in self.bands :
+		bands = self.get_bands()
+		if generates_mb:
+			self.generate_mb()
+		if hasattr(self, 'merged_band'):
+			bands += ['*']
+		for b in bands:
 			days = self.get_b(b).days
 			diff_days = diff_vector(days,
 				uses_prepend=True,
@@ -631,7 +639,7 @@ class LCO():
 			return getattr(self, b)
 
 	def generate_mb(self):
-		self.merged_band = sum([self.get_b(b) for b in self.bands]) # generate
+		self.merged_band = sum([self.get_b(b) for b in self.get_bands()]) # generate
 
 	def get_mb(self):
 		self.generate_mb()
