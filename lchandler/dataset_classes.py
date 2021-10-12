@@ -507,17 +507,19 @@ class LCSet():
 
 	def get_all_parallel_diff_days_b(self, b,
 		target_class=None,
+		generates_mb=True,
 		):
 		lcobjs = [lcobj for lcobj in self.get_lcobjs() if (target_class is None or target_class==self.class_names[lcobj.y])]
 		parallel_diff_days = []
 		for lcobj in self.get_class_lcobjs(target_class):
-			parallel_diff_days += [lcobj.get_parallel_diff_days()[b]]
+			parallel_diff_days += [lcobj.get_parallel_diff_days(generates_mb=generates_mb)[b]]
 		return np.concatenate(parallel_diff_days, axis=0)
 
 	def get_all_parallel_diff_days(self,
 		target_class=None,
+		generates_mb=True,
 		):
-		values = [self.get_all_parallel_diff_days_b(b, target_class=target_class) for b in self.band_names]
+		values = [self.get_all_parallel_diff_days_b(b, target_class=target_class, generates_mb=generates_mb) for b in self.band_names]
 		return np.concatenate(values, axis=0)
 
 	def reset_all_day_offset_serial(self,
