@@ -17,6 +17,7 @@ MIN_POINTS_LIGHTCURVE_DEFINITION = _C.MIN_POINTS_LIGHTCURVE_DEFINITION
 CADENCE_THRESHOLD = _C.CADENCE_THRESHOLD
 EPS = _C.EPS
 RESET_TIME_OFFSET = True
+SERIAL_CHAR = _C.SERIAL_CHAR
 
 ###################################################################################################################################################
 
@@ -494,7 +495,7 @@ class LCO():
 		self.add_sublcobj_b(b, sublcobj)
 
 	def add_sublcobj_b(self, b:str, sublcobj):
-		assert not b=='*'
+		assert not b==SERIAL_CHAR
 		setattr(self, b, sublcobj)
 		if not b in self.bands:
 			self.bands += [b]
@@ -614,7 +615,7 @@ class LCO():
 		if generates_mb:
 			self.generate_mb()
 		if hasattr(self, 'merged_band'):
-			bands += ['*']
+			bands += [SERIAL_CHAR]
 		for b in bands:
 			days = self.get_b(b).days
 			diff_days = diff_vector(days,
@@ -633,7 +634,7 @@ class LCO():
 		return duration
 
 	def get_b(self, b:str):
-		if b=='*':
+		if b==SERIAL_CHAR:
 			return self.get_mb()
 		else:
 			return getattr(self, b)
