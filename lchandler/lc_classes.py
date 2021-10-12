@@ -647,7 +647,7 @@ class LCO():
 		return self.merged_band
 
 	def clip_attrs_given_max_day(self, max_day):
-		for b in self.get_bands()
+		for b in self.get_bands():
 			self.get_b(b).clip_attrs_given_max_day(max_day)
 
 	def get_bands(self):
@@ -657,34 +657,34 @@ class LCO():
 		return len(self.get_b(b))
 
 	def get_length_bdict(self):
-		return {b:self.get_length_b(b) for b in self.bands}
+		return {b:self.get_length_b(b) for b in self.get_bands()}
 
 	def any_synthetic(self):
-		return any([self.get_b(b).is_synthetic() for b in self.bands])
+		return any([self.get_b(b).is_synthetic() for b in self.get_bands()])
 
 	def all_synthetic(self):
-		return all([self.get_b(b).is_synthetic() for b in self.bands])
+		return all([self.get_b(b).is_synthetic() for b in self.get_bands()])
 
 	def any_real(self):
-		return any([not self.get_b(b).is_synthetic() for b in self.bands])
+		return any([not self.get_b(b).is_synthetic() for b in self.get_bands()])
 
 	def all_real(self):
-		return all([not self.get_b(b).is_synthetic() for b in self.bands])
+		return all([not self.get_b(b).is_synthetic() for b in self.get_bands()])
 
 	def any_band_eqover_length(self,
 		th_length=MIN_POINTS_LIGHTCURVE_DEFINITION,
 		):
-		return any([len(self.get_b(b))>=th_length for b in self.bands])
+		return any([len(self.get_b(b))>=th_length for b in self.get_bands()])
 
 	def clean_small_cadence(self,
 		dt=CADENCE_THRESHOLD,
 		mode='expectation',
 		):
-		for b in self.bands:
+		for b in self.get_bands():
 			self.get_b(b).clean_small_cadence(dt, mode)
 
 	def get_snr(self):
-		snr_d = {b:self.get_b(b).get_snr() for b in self.bands}
+		snr_d = {b:self.get_b(b).get_snr() for b in self.get_bands()}
 		return snr_d
 
 	def get_tmax(self):
