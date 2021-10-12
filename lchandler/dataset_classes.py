@@ -477,7 +477,7 @@ class LCSet():
 		lcobjs = [lcobj for lcobj in self.get_lcobjs() if (target_class is None or target_class==self.class_names[lcobj.y])]
 		return lcobjs
 
-	def get_values_b(self, b:str, attr:str,
+	def get_all_values_b(self, b:str, attr:str,
 		target_class:str=None,
 		):
 		values = [getattr(lcobj.get_b(b), attr) for lcobj in self.get_class_lcobjs(target_class)]
