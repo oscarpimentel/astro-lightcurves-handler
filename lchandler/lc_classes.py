@@ -646,6 +646,10 @@ class LCO():
 		self.generate_mb()
 		return self.merged_band
 
+	def clip_attrs_given_max_day(self, max_day):
+		for b in self.get_bands()
+			self.get_b(b).clip_attrs_given_max_day(max_day)
+
 	def get_bands(self):
 		return self.bands
 
