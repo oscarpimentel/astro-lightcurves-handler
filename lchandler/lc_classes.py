@@ -610,7 +610,7 @@ class LCO():
 		):
 		global_first_day = self.compute_global_first_day()
 		parallel_diff_days = {}
-		bands = self.get_bands()
+		bands = copy(self.get_bands())
 		if generates_mb:
 			self.generate_mb()
 		if hasattr(self, 'merged_band'):
