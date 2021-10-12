@@ -630,9 +630,11 @@ class LCO():
 		else:
 			return getattr(self, b)
 
-	def get_mb(self):
-		# ignore b
+	def generate_mb(self):
 		self.merged_band = sum([self.get_b(b) for b in self.bands]) # generate
+
+	def get_mb(self):
+		self.generate_mb()
 		return self.merged_band
 
 	def get_bands(self):
