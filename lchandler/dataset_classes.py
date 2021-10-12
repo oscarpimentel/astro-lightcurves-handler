@@ -521,13 +521,10 @@ class LCSet():
 		return np.concatenate(values, axis=0)
 
 	def reset_all_day_offset_serial(self,
-		reset_time_offset=RESET_TIME_OFFSET,
 		target_class=None,
 		):
 		for lcobj in self.get_class_lcobjs(target_class):
-			lcobj.reset_day_offset_serial(
-				reset_time_offset=reset_time_offset,
-				)
+			lcobj.reset_day_offset_serial()
 
 	def generate_all_mb(self,
 		target_class=None,
