@@ -16,7 +16,6 @@ CHECK = _C.CHECK
 MIN_POINTS_LIGHTCURVE_DEFINITION = _C.MIN_POINTS_LIGHTCURVE_DEFINITION
 CADENCE_THRESHOLD = _C.CADENCE_THRESHOLD
 EPS = _C.EPS
-RESET_TIME_OFFSET = True
 
 ###################################################################################################################################################
 
@@ -97,6 +96,9 @@ class SubLCO():
 			self._set_obse(flux_magnitude.get_flux_error_from_magnitude(mag, mag_error))
 			self.flux_type = True
 
+	def convert_to_flux(self):
+		assert 0
+
 	def get_synthetic_mode(self):
 		return self.synthetic_mode
 
@@ -138,7 +140,9 @@ class SubLCO():
 			assert np.all(obse>=0) # check all obs-errors are positive
 		self.obse = obse
 
-	def add_day_values(self, values):
+	def add_day_values(self, values,
+		recalculate_order:bool=True,
+		):
 		'''
 		This method overrides information!
 		Always use this method to add values
@@ -146,9 +150,23 @@ class SubLCO():
 		'''
 		assert len(self)==len(values)
 		new_days = self.days+values
-		self.days = new_days # bypass _set_days() because non-sorted asumption
 		valid_indexs = np.argsort(new_days) # must sort before the values to mantain sequenciality
-		self.apply_valid_indexs_to_attrs(valid_indexs) # apply valid indexs to all
+		self.days = new_days # bypass _set_days() because non-sorted asumption
+		self.apply_valid_indexs_to_attrs(valid_indexs, recalculate_order) # apply valid indexs to all
+
+	def add_day_noise_uniform(self, hours_noise:float,
+		recalculate_order:bool=True,
+		):
+		'''
+		This method overrides information!
+		'''
+		if hours_noise==0:
+			return
+
+		hours_noise = np.Floatndarray(len(self)).uniform_(-hours_noise, hours_noise)
+		self.add_day_values(hours_noise/24.,
+			recalculate_order,
+			)
 
 	def add_obs_values(self, values):
 		'''
@@ -180,6 +198,7 @@ class SubLCO():
 
 	def apply_downsampling_window(self, mode_d, ds_prob,
 		min_valid_length:int=MIN_POINTS_LIGHTCURVE_DEFINITION,
+		recalculate_order:bool=True,
 		min_frac=1/3,
 		):
 		if len(self)<=min_valid_length:
@@ -217,10 +236,22 @@ class SubLCO():
 			valid_mask = valid_mask[np.random.permutation(len(valid_mask))]
 
 		### calcule again as the original values changed
-		self.apply_valid_indexs_to_attrs(valid_mask)
+		self.apply_valid_indexs_to_attrs(valid_mask, recalculate_order)
 		return
 
-	def apply_valid_indexs_to_attrs(self, valid_indexs):
+	def get_diff(self, attr:str):
+		return diff_vector(getattr(self, attr))
+
+	def set_diff(self, attr:str):
+		'''
+		Calculate a diff version from an attr and create a new attr with new name
+		'''
+		diffv = self.get_diff(attr)
+		setattr(self, f'd_{attr}', diffv)
+
+	def apply_valid_indexs_to_attrs(self, valid_indexs,
+		recalculate_order:bool=True,
+		):
 		'''
 		Be careful, this method can remove info
 		calcule d_days again
@@ -236,25 +267,36 @@ class SubLCO():
 				new_x = x[valid_indexs]
 				setattr(self, key, new_x)
 
-	def get_valid_indexs_max_day(self, max_day):
-		return self.days<=max_day
+		### calcule again as the original values changed
+		if recalculate_order:
+			if hasattr(self, 'd_days'):
+				self.set_diff('days')
+			if hasattr(self, 'd_obs'):
+				self.set_diff('obs')
 
-	def clip_attrs_given_max_day(self, max_day):
+	def get_valid_indexs_max_day(self, max_day:float,
+		remove_offset=False,
+		):
+		offset = self.days[0] if remove_offset else 0
+		return self.days-offset<=max_day
+
+	def clip_attrs_given_max_day(self, max_day:float,
+		remove_offset=False,
+		):
 		'''
 		Be careful, this method remove info!
 		'''
-		valid_indexs = self.get_valid_indexs_max_day(max_day)
+		valid_indexs = self.get_valid_indexs_max_day(max_day, remove_offset)
 		self.apply_valid_indexs_to_attrs(valid_indexs)
 
-	def get_valid_indexs_max_duration(self, max_duration):
-		return self.days-self.get_first_day()<=max_duration
+	def get_valid_indexs_max_duration(self, max_duration:float):
+		return self.get_valid_indexs_max_day(max_duration, True)
 
-	def clip_attrs_given_max_duration(self, max_duration):
+	def clip_attrs_given_max_duration(self, max_duration:float):
 		'''
 		Be careful, this method remove info!
 		'''
-		valid_indexs = self.get_valid_indexs_max_duration(max_duration)
-		self.apply_valid_indexs_to_attrs(valid_indexs)
+		self.clip_attrs_given_max_day(max_duration, True)
 
 	def get_x(self):
 		attrs = ['days', 'obs', 'obse']
@@ -275,12 +317,10 @@ class SubLCO():
 		return self.days[-1]
 
 	def get_days_duration(self):
-		if len(self)==0:
-			return None
-		first_day = self.get_first_day()
-		last_day = self.get_last_day()
-		assert last_day>=first_day
-		return last_day-first_day
+		return self.get_last_day()-self.get_first_day() if len(self)>0 else None
+
+	def keys(self):
+		return self.__dict__.keys()
 
 	def copy(self):
 		return copy(self)
@@ -452,12 +492,14 @@ class LCO():
 	def __init__(self,
 		is_flux:bool=True,
 		y:int=None,
+		global_first_day:int=0,
 		ra:float=None,
 		dec:float=None,
 		z:float=None,
 		):
 		self.is_flux = is_flux
 		self.set_y(y)
+		self.global_first_day = global_first_day
 		self.ra = ra
 		self.dec = dec
 		self.z = z
@@ -474,23 +516,11 @@ class LCO():
 		for b in self.bands:
 			self.get_b(b).convert_to_flux()
 
-	def add_bands(self, band_dict,
-		reset_time_offset=RESET_TIME_OFFSET,
-		):
-		bands = band_dict.keys()
-		for b in bands:
-			args = band_dict[b]
-			self.add_b(b, *args)
-		if reset_time_offset:
-			self.reset_day_offset_serial()
-
 	def add_b(self, b:str, days, obs, obse):
 		'''
 		Always use this method
 		'''
-		sublcobj = SubLCO(days, obs, obse,
-			y=self.y,
-			)
+		sublcobj = SubLCO(days, obs, obse, self.y)
 		self.add_sublcobj_b(b, sublcobj)
 
 	def add_sublcobj_b(self, b:str, sublcobj):
@@ -498,10 +528,11 @@ class LCO():
 		if not b in self.bands:
 			self.bands += [b]
 
-	def copy_only_metadata(self):
+	def copy_only_data(self):
 		new_lco = LCO(
 			is_flux=self.is_flux,
 			y=self.y,
+			global_first_day=self.global_first_day,
 			ra=self.ra,
 			dec=self.dec,
 			z=self.z,
@@ -515,6 +546,7 @@ class LCO():
 		new_lco = LCO(
 			is_flux=self.is_flux,
 			y=self.y,
+			global_first_day=self.global_first_day,
 			ra=self.ra,
 			dec=self.dec,
 			z=self.z,
@@ -530,46 +562,38 @@ class LCO():
 		'''
 		self.y = None if y is None else int(y)
 
+	def keys(self):
+		return self.get_b(self.bands[0]).keys()
+
 	def __repr__(self):
 		txt = ''
 		for b in self.bands:
 			obj = self.get_b(b)
-			txt += f'({b}:{len(obj)}) - {str(obj)}\n'
+			txt += f'({b}:{len(obj)}) - {obj.__repr__()}\n'
 		return txt
 
 	def __len__(self):
 		return sum([len(self.get_b(b)) for b in self.bands])
 
-	### serial/multi-band important methods
-	def add_first_day(self, first_day,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		for b in bands:
-			self.get_b(b).days = self.get_b(b).days+first_day
-
-	def compute_global_first_day(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		first_days = [self.get_b(b).get_first_day() for b in bands if len(self.get_b(b))>0]
-		assert len(first_days)>0
-		global_first_day = min(first_days)
-		return global_first_day
-
+	#########  serial/multiband important methods
 	def reset_day_offset_serial(self,
+		store_day_offset:bool=False,
+		return_day_offset:bool=False,
 		bands=None,
 		):
 		'''
 		delete day offset acording to the first day along any day!
 		'''
 		bands = self.bands if bands is None else bands
-		global_first_day = self.compute_global_first_day(
-			bands=bands,
-			)
-		self.add_first_day(-global_first_day,
-			bands,
-			)
+		first_days = [self.get_b(b).get_first_day() for b in bands if len(self.get_b(b))>0]
+		assert len(first_days)>0
+		day_offset = min(first_days) # select the min along all bands
+		for b in bands:
+			self.get_b(b).days = self.get_b(b).days-day_offset
+		if store_day_offset:
+			self.global_first_day = day_offset
+		if return_day_offset:
+			return self, day_offset
 		return self
 
 	def get_sorted_days_indexs_serial(self,
@@ -595,8 +619,7 @@ class LCO():
 		onehot = onehot[sorted_days_indexs]
 		return onehot
 
-	def get_x_serial(self,
-		attrs=['days', 'obs', 'obse'],
+	def get_custom_x_serial(self, attrs:list,
 		bands=None,
 		):
 		bands = self.bands if bands is None else bands
@@ -606,67 +629,45 @@ class LCO():
 		x = x[sorted_days_indexs]
 		return x
 
-	def get_serial_days(self,
+	def get_x_serial(self,
 		bands=None,
 		):
 		bands = self.bands if bands is None else bands
-		serial_days = self.get_x_serial(['days'],
-			bands=bands,
+		return self.get_custom_x_serial(['days', 'obs', 'obse'],
+			bands,
 			)
-		return serial_days
 
-	def get_serial_diff_days(self,
+	def get_days_serial(self,
 		bands=None,
 		):
 		bands = self.bands if bands is None else bands
-		serial_days = self.get_serial_days(
-			bands=bands,
+		return self.get_custom_x_serial(['days'],
+			bands,
 			)[:,0]
-		serial_diff_days = diff_vector(serial_days,
-			uses_prepend=True,
-			prepended_value=None,
-			)
-		return serial_diff_days
 
-	def get_parallel_days(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		parallel_days = {}
-		for b in bands:
-			days = self.get_b(b).days
-			parallel_days[b] = days
-		return parallel_days
-
-	def get_parallel_diff_days(self,
-		bands=None,
-		):
-		bands = self.bands if bands is None else bands
-		global_first_day = self.compute_global_first_day(
-				bands=bands,
-				)
-		parallel_diff_days = {}
-		for b in bands:
-			days = self.get_b(b).days
-			diff_days = diff_vector(days,
-				uses_prepend=True,
-				prepended_value=global_first_day,
-				)
-			parallel_diff_days[b] = diff_days
-		return parallel_diff_days
-
-	def get_serial_days_duration(self,
+	def get_days_serial_duration(self,
 		bands=None,
 		):
 		'''
 		Duration in days of complete light curve
 		'''
 		bands = self.bands if bands is None else bands
-		serial_days = self.get_serial_days(
-			bands=bands,
-			)
-		duration = np.max(serial_days)-np.min(serial_days)
+		days = np.concatenate([self.get_b(b).days for b in bands], axis=0)
+		duration = np.max(days)-np.min(days)
 		return duration
+
+	def set_diff_b(self, b:str, attr:str):
+		self.get_b(b).set_diff(attr) 
+
+	def set_diff_parallel(self, attr:str,
+		bands=None,
+		):
+		'''
+		Along all bands
+		'''
+		bands = self.bands if bands is None else bands
+		for b in bands:
+			self.set_diff_b(b, attr)
 
 	def get_b(self, b:str):
 		return getattr(self, b)

@@ -331,7 +331,7 @@ class LCSet():
 			info_dict = {
 				f'{c}-$x$':XError(np.concatenate([x[:,OBS_INDEX] for x in xs])),
 				f'{c}-$L$':XError([len(lcobj) for lcobj in lcobjs]),
-				f'{c}-$\Delta T$':XError([lcobj.get_days_serial_duration() for lcobj in lcobjs]),
+				f'{c}-$\Delta T$':XError([lcobj.get_serial_days_duration() for lcobj in lcobjs]),
 				f'{c}-$\Delta t$':XError(np.concatenate([diff_vector(x[:,DAYS_INDEX]) for x in xs])),
 			}
 		else:
@@ -359,12 +359,16 @@ class LCSet():
 		index=None,
 		):
 		lcobjs = self.get_lcobjs(c)
+		parallel_diff_days = []
+		for lcobj in lcobjs:
+			parallel_diff_days += [lcobj.get_parallel_diff_days()[b]]
+
 		if len(lcobjs)>0:
 			info_dict = {
 				f'{c}-$x$':XError(np.concatenate([lcobj.get_b(b).obs for lcobj in lcobjs])),
 				f'{c}-$L$':XError([len(lcobj.get_b(b)) for lcobj in lcobjs]),
 				f'{c}-$\Delta T$':XError([lcobj.get_b(b).get_days_duration() for lcobj in lcobjs if len(lcobj.get_b(b))>=1]),
-				f'{c}-$\Delta t$':XError(np.concatenate([lcobj.get_b(b).get_diff('days') for lcobj in lcobjs])),
+				f'{c}-$\Delta t$':XError(np.concatenate(parallel_diff_days, axis=0)),
 				f'{c}-tmax':XError([lcobj.get_b(b).get_max_brightness_time() for lcobj in lcobjs if not np.isnan(lcobj.get_b(b).get_max_brightness_time())]),
 			}
 		else:
@@ -391,7 +395,6 @@ class LCSet():
 		df = pd.concat(dfs, axis=1)
 		return df
 
-	### repr
 	def __repr__b(self, b):
 		df = self.get_bstats_idf(b)
 		lengths = sum([df[f'{c}-$L$'].values[0] for c in self.class_names])

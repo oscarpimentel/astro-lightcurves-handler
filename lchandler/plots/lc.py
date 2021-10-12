@@ -33,7 +33,10 @@ def plot_lightcurve(ax, lcobj, b, label,
 	obs = lcobjb.obs[valid_indexs]
 	obse = lcobjb.obse[valid_indexs]
 	color = _C.COLOR_DICT[b] if not b is None else 'k'
-	bars.plot_norm_percentile_bar(ax, new_days, obs, obse, color=color)
+	bars.plot_norm_percentile_bar(ax, new_days, obs, obse,
+		color=color,
+		alpha=alpha,
+		)
 	ax.plot(new_days, obs, ':', color=color, alpha=0.25*alpha)
 
 	labels = [label]
@@ -42,9 +45,9 @@ def plot_lightcurve(ax, lcobj, b, label,
 	len_label = f' ({len(obs):,}#)' if label_len else ''
 	ax.plot(new_days, obs, 'o',
 		color=color,
-		label=f'{"; ".join(labels)}{len_label}{synth_label}',
 		alpha=alpha,
 		markeredgecolor='k' if lcobjb.is_synthetic() else None,
+		label=f'{"; ".join(labels)}{len_label}{synth_label}',
 		)
 	x_margins = get_margin(new_days, x_margin_offset_percent)
 	y_margins = get_margin(obs, y_margin_offset_percent)
