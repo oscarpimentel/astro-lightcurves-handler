@@ -311,9 +311,9 @@ class SubLCO():
 		return l
 
 	def __repr__(self):
-		txt = f'[d:{self.days}{self.days.dtype}'
-		txt += f', o:{self.obs}{self.obs.dtype}'
-		txt += f', oe:{self.obse}{self.obse.dtype}]'
+		txt = f'[d={self.days}{self.days.dtype}'
+		txt += f'; o={self.obs}{self.obs.dtype}'
+		txt += f'; oe={self.obse}{self.obse.dtype}]'
 		return txt
 
 	def clean_small_cadence(self,
@@ -610,12 +610,12 @@ class LCO():
 		generates_mb=True,
 		):
 		global_first_day = self.compute_global_first_day()
-		parallel_diff_days = {}
 		bands = copy(self.get_bands())
 		if generates_mb:
 			self.generate_mb()
 		if hasattr(self, 'merged_band'):
 			bands += [SERIAL_CHAR]
+		parallel_diff_days = {}
 		for b in bands:
 			days = self.get_b(b).days
 			diff_days = diff_vector(days,
