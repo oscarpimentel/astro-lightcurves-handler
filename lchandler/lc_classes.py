@@ -18,6 +18,7 @@ CADENCE_THRESHOLD = _C.CADENCE_THRESHOLD
 EPS = _C.EPS
 RESET_TIME_OFFSET = True
 SERIAL_CHAR = _C.SERIAL_CHAR
+MIN_FRAC = 1/3
 
 ###################################################################################################################################################
 
@@ -161,27 +162,31 @@ class SubLCO():
 		new_obs = self.obs+values
 		self._set_obs(new_obs)
 
-	def add_obs_noise_gaussian(self, obs_min_lim:float,
+	def apply_data_augmentation(self, mode_d, ds_prob,
+		obs_min_lim=0,
+		min_valid_length=MIN_POINTS_LIGHTCURVE_DEFINITION,
+		min_frac=MIN_FRAC,
 		std_scale=OBSE_STD_SCALE,
 		df=DF,
 		obs_noise_range=OBS_NOISE_RANGE,
+		bypass_prob=.05,
 		):
-		'''
-		This method overrides information!
-		'''
-		if std_scale==0:
+		if random.random()<bypass_prob:
 			return
-		obs_values = get_new_noisy_obs(self.obs, self.obse, obs_min_lim,
-			std_scale,
-			df,
-			obs_noise_range,
+		self.apply_downsampling_window(mode_d, ds_prob,
+			min_valid_length=min_valid_length,
+			min_frac=min_frac,
 			)
-		self.add_obs_values(obs_values-self.obs)
+		self.add_obs_noise_gaussian(obs_min_lim,
+			std_scale=std_scale,
+			df=df,
+			obs_noise_range=obs_noise_range,
+			)
 		return
 
 	def apply_downsampling_window(self, mode_d, ds_prob,
-		min_valid_length:int=MIN_POINTS_LIGHTCURVE_DEFINITION,
-		min_frac=1/3,
+		min_valid_length=MIN_POINTS_LIGHTCURVE_DEFINITION,
+		min_frac=MIN_FRAC,
 		):
 		if len(self)<=min_valid_length:
 			return
@@ -219,6 +224,24 @@ class SubLCO():
 
 		### calcule again as the original values changed
 		self.apply_valid_indexs_to_attrs(valid_mask)
+		return
+
+	def add_obs_noise_gaussian(self, obs_min_lim:float,
+		std_scale=OBSE_STD_SCALE,
+		df=DF,
+		obs_noise_range=OBS_NOISE_RANGE,
+		):
+		'''
+		This method overrides information!
+		'''
+		if std_scale==0:
+			return
+		obs_values = get_new_noisy_obs(self.obs, self.obse, obs_min_lim,
+			std_scale,
+			df,
+			obs_noise_range,
+			)
+		self.add_obs_values(obs_values-self.obs)
 		return
 
 	def apply_valid_indexs_to_attrs(self, valid_indexs):
