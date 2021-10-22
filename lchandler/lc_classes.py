@@ -9,8 +9,6 @@ from copy import copy, deepcopy
 from fuzzytools import numba as ftnumba
 from . import flux_magnitude as flux_magnitude
 
-DF = 2 # 1 2 5 np.inf
-OBSE_STD_SCALE = 1/2
 OBS_NOISE_RANGE = 1
 CHECK = _C.CHECK
 MIN_POINTS_LIGHTCURVE_DEFINITION = _C.MIN_POINTS_LIGHTCURVE_DEFINITION
@@ -18,7 +16,16 @@ CADENCE_THRESHOLD = _C.CADENCE_THRESHOLD
 EPS = _C.EPS
 RESET_TIME_OFFSET = True
 SERIAL_CHAR = _C.SERIAL_CHAR
-MIN_FRAC = 1/3
+
+DS_MODE = {'random':1.}
+DS_PROB = 10/100
+MIN_FRAC = 50/100
+DF = 2 # 1 2 5 np.inf
+OBSE_STD_SCALE = 1/2
+BYPASS_PROB_WINDOW = .5
+BYPASS_PROB_DROPOUT = .5
+BYPASS_PROB_OBS = .5
+BYPASS_PROB = .0
 
 ###################################################################################################################################################
 
@@ -162,65 +169,84 @@ class SubLCO():
 		new_obs = self.obs+values
 		self._set_obs(new_obs)
 
-	def apply_data_augmentation(self, mode_d, ds_prob,
+	def apply_data_augmentation(self,
+		ds_mode=DS_MODE,
+		ds_prob=DS_PROB,
 		obs_min_lim=0,
 		min_valid_length=MIN_POINTS_LIGHTCURVE_DEFINITION,
 		min_frac=MIN_FRAC,
+		bypass_prob_window=BYPASS_PROB_WINDOW,
+		bypass_prob_dropout=BYPASS_PROB_DROPOUT,
 		std_scale=OBSE_STD_SCALE,
 		df=DF,
 		obs_noise_range=OBS_NOISE_RANGE,
-		bypass_prob=.05,
+		bypass_prob_obs=BYPASS_PROB_OBS,
+		bypass_prob=BYPASS_PROB,
 		):
-		if random.random()<bypass_prob:
-			return
-		self.apply_downsampling_window(mode_d, ds_prob,
-			min_valid_length=min_valid_length,
-			min_frac=min_frac,
-			)
-		self.add_obs_noise_gaussian(obs_min_lim,
-			std_scale=std_scale,
-			df=df,
-			obs_noise_range=obs_noise_range,
-			)
+		if random.random()>bypass_prob:
+			self.apply_downsampling_window(
+				ds_mode=ds_mode,
+				ds_prob=ds_prob,
+				min_valid_length=min_valid_length,
+				min_frac=min_frac,
+				bypass_prob_window=bypass_prob_window,
+				bypass_prob_dropout=bypass_prob_dropout,
+				)
+			self.add_obs_noise_gaussian(obs_min_lim,
+				std_scale=std_scale,
+				df=df,
+				obs_noise_range=obs_noise_range,
+				bypass_prob_obs=bypass_prob_obs,
+				)
 		return
 
-	def apply_downsampling_window(self, mode_d, ds_prob,
+	def apply_downsampling_window(self,
+		ds_mode=DS_MODE,
+		ds_prob=DS_PROB,
 		min_valid_length=MIN_POINTS_LIGHTCURVE_DEFINITION,
 		min_frac=MIN_FRAC,
+		bypass_prob_window=BYPASS_PROB_WINDOW,
+		bypass_prob_dropout=BYPASS_PROB_DROPOUT,
 		):
 		if len(self)<=min_valid_length:
 			return
-		if mode_d is None or len(mode_d)==0:
-			mode_d = {'none':1}
-		keys = list(mode_d.keys())
-		mode = np.random.choice(keys, p=[mode_d[k] for k in keys])
+		min_length = max(min_valid_length, int(min_frac*len(self)))
+		valid_mask = np.ones((len(self)), dtype=np.bool)
 
 		### mask
-		valid_mask = np.zeros((len(self)), dtype=np.bool)
-		min_length = max(min_valid_length, int(min_frac*len(self)))
-		if mode=='none':
-			valid_mask[:] = True
+		if random.random()>bypass_prob_window:
+			if ds_mode is None or len(ds_mode)==0:
+				ds_mode = {'none':1}
+			keys = list(ds_mode.keys())
+			mode = np.random.choice(keys, p=[ds_mode[k] for k in keys])
+			if mode=='none':
+				pass
 
-		elif mode=='left':
-			new_length = random.randint(min_length, len(self)) # [a,b]
-			valid_mask[:new_length] = True
+			elif mode=='left':
+				valid_mask[:] = False
+				new_length = random.randint(min_length, len(self)) # [a,b]
+				valid_mask[:new_length] = True
 
-		elif mode=='random':
-			new_length = random.randint(min_length, len(self)) # [a,b]
-			index = random.randint(0, len(self)-new_length) # [a,b]
-			valid_mask[index:index+new_length] = True
-		else:
-			raise Exception(f'no mode {mode}')
+			elif mode=='random':
+				valid_mask[:] = False
+				new_length = random.randint(min_length, len(self)) # [a,b]
+				index = random.randint(0, len(self)-new_length) # [a,b]
+				valid_mask[index:index+new_length] = True
+			else:
+				raise Exception(f'no mode {mode}')
 
-		assert ds_prob>=0 and ds_prob<=1
-		if ds_prob>0:
-			ber_valid_mask = ftnumba.bernoulli(1-ds_prob, len(self))
-			valid_mask = valid_mask & ber_valid_mask 
+		### random dropout
+		if random.random()>bypass_prob_dropout:
+			assert ds_prob>=0 and ds_prob<=1
+			if ds_prob>0:
+				ber_valid_mask = ftnumba.bernoulli(1-ds_prob, len(self))
+				valid_mask = valid_mask & ber_valid_mask
+				# print(valid_mask, ber_valid_mask) 
 
-		if valid_mask.sum()<min_length: # extra case. If by change the mask implies a very short curve
-			valid_mask = np.zeros((len(self)), dtype=np.bool)
-			valid_mask[:min_length] = True
-			valid_mask = valid_mask[np.random.permutation(len(valid_mask))]
+			if valid_mask.sum()<min_length: # extra case. If by change the mask implies a very short curve
+				valid_mask = np.zeros((len(self)), dtype=np.bool)
+				valid_mask[:min_length] = True
+				valid_mask = valid_mask[np.random.permutation(len(valid_mask))]
 
 		### calcule again as the original values changed
 		self.apply_valid_indexs_to_attrs(valid_mask)
@@ -230,18 +256,20 @@ class SubLCO():
 		std_scale=OBSE_STD_SCALE,
 		df=DF,
 		obs_noise_range=OBS_NOISE_RANGE,
+		bypass_prob_obs=BYPASS_PROB_OBS,
 		):
 		'''
 		This method overrides information!
 		'''
 		if std_scale==0:
 			return
-		obs_values = get_new_noisy_obs(self.obs, self.obse, obs_min_lim,
-			std_scale,
-			df,
-			obs_noise_range,
-			)
-		self.add_obs_values(obs_values-self.obs)
+		if random.random()>bypass_prob_obs:
+			obs_values = get_new_noisy_obs(self.obs, self.obse, obs_min_lim,
+				std_scale,
+				df,
+				obs_noise_range,
+				)
+			self.add_obs_values(obs_values-self.obs)
 		return
 
 	def apply_valid_indexs_to_attrs(self, valid_indexs):
