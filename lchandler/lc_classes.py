@@ -21,10 +21,10 @@ BYPASS_PROB_WINDOW = 0
 BYPASS_PROB_DROPOUT = 0
 BYPASS_PROB_OBS = 0
 DS_MODE = {'random':1.}
-MIN_FRAC = 50/100
+MIN_WINDOW_LENGTH_FRAC = 75/100
 DF = 2 # 1 2 5 np.inf
 OBSE_STD_SCALE = 1/2
-DS_PROB = 0/100
+DS_PROB = 10/100
 BYPASS_PROB = .0
 
 ###################################################################################################################################################
@@ -174,7 +174,7 @@ class SubLCO():
 		ds_prob=DS_PROB,
 		obs_min_lim=0,
 		min_valid_length=MIN_POINTS_LIGHTCURVE_DEFINITION,
-		min_frac=MIN_FRAC,
+		min_window_length_frac=MIN_WINDOW_LENGTH_FRAC,
 		bypass_prob_window=BYPASS_PROB_WINDOW,
 		bypass_prob_dropout=BYPASS_PROB_DROPOUT,
 		std_scale=OBSE_STD_SCALE,
@@ -188,7 +188,7 @@ class SubLCO():
 				ds_mode=ds_mode,
 				ds_prob=ds_prob,
 				min_valid_length=min_valid_length,
-				min_frac=min_frac,
+				min_window_length_frac=min_window_length_frac,
 				bypass_prob_window=bypass_prob_window,
 				bypass_prob_dropout=bypass_prob_dropout,
 				)
@@ -204,32 +204,34 @@ class SubLCO():
 		ds_mode=DS_MODE,
 		ds_prob=DS_PROB,
 		min_valid_length=MIN_POINTS_LIGHTCURVE_DEFINITION,
-		min_frac=MIN_FRAC,
+		min_window_length_frac=MIN_WINDOW_LENGTH_FRAC,
 		bypass_prob_window=BYPASS_PROB_WINDOW,
 		bypass_prob_dropout=BYPASS_PROB_DROPOUT,
 		):
 		if len(self)<=min_valid_length:
 			return
-		min_length = max(min_valid_length, int(min_frac*len(self)))
 		valid_mask = np.ones((len(self)), dtype=np.bool)
 
 		### mask
 		if random.random()>bypass_prob_window:
 			if ds_mode is None or len(ds_mode)==0:
 				ds_mode = {'none':1}
+
 			keys = list(ds_mode.keys())
 			mode = np.random.choice(keys, p=[ds_mode[k] for k in keys])
+			window_length = max(min_valid_length, int(min_window_length_frac*len(self)))
+			
 			if mode=='none':
 				pass
 
 			elif mode=='left':
 				valid_mask[:] = False
-				new_length = random.randint(min_length, len(self)) # [a,b]
+				new_length = random.randint(window_length, len(self)) # [a,b]
 				valid_mask[:new_length] = True
 
 			elif mode=='random':
 				valid_mask[:] = False
-				new_length = random.randint(min_length, len(self)) # [a,b]
+				new_length = random.randint(window_length, len(self)) # [a,b]
 				index = random.randint(0, len(self)-new_length) # [a,b]
 				valid_mask[index:index+new_length] = True
 			else:
@@ -243,9 +245,9 @@ class SubLCO():
 				valid_mask = valid_mask & ber_valid_mask
 				# print(valid_mask, ber_valid_mask) 
 
-			if valid_mask.sum()<min_length: # extra case. If by change the mask implies a very short curve
+			if valid_mask.sum()<min_valid_length: # extra case. If by change the mask implies a very short curve
 				valid_mask = np.zeros((len(self)), dtype=np.bool)
-				valid_mask[:min_length] = True
+				valid_mask[:min_valid_length] = True
 				valid_mask = valid_mask[np.random.permutation(len(valid_mask))]
 
 		### calcule again as the original values changed
