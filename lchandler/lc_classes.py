@@ -17,14 +17,14 @@ EPS = _C.EPS
 RESET_TIME_OFFSET = True
 SERIAL_CHAR = _C.SERIAL_CHAR
 
+BYPASS_PROB_WINDOW = 0
+BYPASS_PROB_DROPOUT = 0
+BYPASS_PROB_OBS = 0
 DS_MODE = {'random':1.}
-DS_PROB = 10/100
 MIN_FRAC = 50/100
 DF = 2 # 1 2 5 np.inf
 OBSE_STD_SCALE = 1/2
-BYPASS_PROB_WINDOW = .5
-BYPASS_PROB_DROPOUT = .5
-BYPASS_PROB_OBS = .5
+DS_PROB = 0/100
 BYPASS_PROB = .0
 
 ###################################################################################################################################################
