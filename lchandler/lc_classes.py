@@ -467,11 +467,13 @@ class SubLCO():
 			return tmax
 
 	def __add__(self, other):
-		if other==0 or other is None:
-			return copy(self)
-		elif self==0 or self is None:
+		if self is None or self==0:
 			return copy(other)
-		else:
+
+		if other is None or other==0:
+			return copy(self)
+		
+		if type(self)==SubLCO and type(other)==SubLCO:
 			new_days = np.concatenate([self.days, other.days], axis=0)
 			new_obs = np.concatenate([self.obs, other.obs], axis=0)
 			new_obse = np.concatenate([self.obse, other.obse], axis=0)
@@ -484,6 +486,8 @@ class SubLCO():
 				self.dtype,
 				)
 			return new_lco
+
+		assert 0
 
 	def __radd__(self, other):
 		return self+other
