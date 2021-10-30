@@ -204,7 +204,7 @@ class LCSet():
 	def reset(self):
 		pass
 
-	def reset_boostrap(self,
+	def generate_boostrap(self,
 		batch_prop=1,
 		):
 		lcobj_names = self.get_lcobj_names()
