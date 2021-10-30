@@ -6,6 +6,7 @@ import numpy as np
 import random
 import copy
 import fuzzytools.datascience.statistics as fstats
+import fuzzytools.datascience.splits as splits
 from fuzzytools.datascience.xerror import XError
 from fuzzytools.strings import get_bar
 from fuzzytools.level_bars import LevelBar
@@ -22,6 +23,8 @@ DAYS_INDEX = _C.DAYS_INDEX
 OBS_INDEX = _C.OBS_INDEX
 OBSE_INDEX = _C.OBSE_INDEX
 RESET_TIME_OFFSET = True
+SHUFFLE = True
+RANDOM_STATE = None
 
 ###################################################################################################################################################
 
@@ -99,20 +102,20 @@ class LCDataset():
 			deleted_keys = self[lcset_name].clean_empty_obs_keys(verbose=0)
 			print(f'({lcset_name}) deleted keys={deleted_keys}')
 
-	def split(self, to_split_lcset_name, new_sets_props, kfolds,
-		random_state=0,
-		permute=True,
+	def split(self, to_split_lcset_name,
+		shuffle=SHUFFLE,
+		random_state=RANDOM_STATE,
 		):
-		self.kfolds = [str(kf) for kf in range(0, kfolds)]
 		to_split_lcset = self[to_split_lcset_name]
 		class_names = to_split_lcset.class_names
 		obj_names = to_split_lcset.get_lcobj_names()
 		obj_classes = [class_names[to_split_lcset[obj_name].y] for obj_name in obj_names]
-		obj_names_kdict = fstats.stratified_kfold_split(obj_names, obj_classes, class_names, new_sets_props, kfolds,
+		obj_names_kdict, class_names, kfolds = splits.stratifiedf_kfold_cyclic_311(obj_names, obj_classes,
+			shuffle=shuffle,
 			random_state=random_state,
-			permute=permute,
+			prefix_str=f'{to_split_lcset_name}_'
 			)
-
+		self.kfolds = kfolds
 		for new_set_name in obj_names_kdict.keys():
 			self.set_lcset(new_set_name, to_split_lcset.copy({}))
 			obj_names = obj_names_kdict[new_set_name]
@@ -131,10 +134,10 @@ class LCDataset():
 		lcset = self.set_lcset(new_lcset_name, self[lcset_name].copy())
 		#print(f'survey={lcset.survey}; after processing={lcset_name} (>{new_lcset_name})')
 		total_deleted_points = {b:0 for b in lcset.band_names}
-		for k in range(sigma_n):
+		for k in range(0, sigma_n):
 			#print(f'k={k}')
 			for b in lcset.band_names:
-				sigma_values = lcset.get_lcset_values_b(b, 'obse')
+				sigma_values = lcset.get_all_values_b(b, 'obse')
 				sigma_samples = len(sigma_values)
 				mean = np.mean(sigma_values)
 				sigma = np.std(sigma_values)
@@ -144,8 +147,8 @@ class LCDataset():
 				total_deleted_points[b] += deleted_points
 		
 			lcset.clean_empty_obs_keys()
-			lcset.reset_day_offset_serial()
-			sigma_samples = len(lcset.get_lcset_values_b(b, 'obse'))
+			lcset.reset_all_day_offset_serial()
+			sigma_samples = len(lcset.get_all_values_b(b, 'obse'))
 			#print(f'sigma_samples={sigma_samples:,}; total_deleted_points={total_deleted_points}')
 
 		if remove_old_lcset:
@@ -199,15 +202,15 @@ class LCSet():
 		self.reset()
 
 	def reset(self):
-		self.reset_boostrap()
+		pass
 
 	def reset_boostrap(self,
-		k_n=1,
+		batch_prop=1,
 		):
 		lcobj_names = self.get_lcobj_names()
 		lcobj_classes = [self.class_names[self[lcobj_name].y] for lcobj_name in lcobj_names]
 		self.boostrap = BalancedCyclicBoostraping(lcobj_names, lcobj_classes,
-			k_n=k_n,
+			batch_prop=batch_prop,
 			)
 
 	def get_boostrap_samples(self):
@@ -291,11 +294,11 @@ class LCSet():
 		lcobj_labels =self.get_lcobj_labels()
 		return [self.class_names[y] for y in lcobj_labels]
 
-	def get_populations_cdict(self):
-		return fstats.get_populations_cdict(self.get_lcobj_classes(), self.class_names)
+	def get_nof_samples_cdict(self):
+		return fstats.get_nof_samples_cdict(self.get_lcobj_classes(), self.class_names)
 
 	def get_class_balanced_weights_cdict(self):
-		pop_cdict = self.get_populations_cdict()
+		pop_cdict = self.get_nof_samples_cdict()
 		w = {c:1/(pop_cdict[c]*len(self.class_names)) for c in self.class_names} # 1/(Nc*C)
 		return w
 
@@ -418,8 +421,8 @@ class LCSet():
 			txt = self.__repr_serial()
 			for b in self.band_names:
 				txt += self.__repr__b(b)
-			populations_cdict = self.get_populations_cdict()
-			txt += str(LevelBar(populations_cdict, ' '*3))
+			nof_samples_cdict = self.get_nof_samples_cdict()
+			txt += str(LevelBar(nof_samples_cdict, ' '*3))
 		else:
 			txt = 'empty lcset\n'
 		return txt[:-1]

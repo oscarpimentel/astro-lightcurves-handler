@@ -56,7 +56,7 @@ def plot_values_distribution(lcdataset, set_name:str, attr:str,
 	for kb,b in enumerate(lcset.band_names):
 		for kc,c in enumerate(lcset.class_names):
 			ax = axes[kc,kb]
-			plot_dict = {c:dropout_extreme_percentiles(lcset.get_lcset_values_b(b, attr, c), p, mode='upper')[0]}
+			plot_dict = {c:dropout_extreme_percentiles(lcset.get_all_values_b(b, attr, c), p, mode='upper')[0]}
 			plot_df = pd.DataFrame.from_dict(plot_dict, orient='columns')
 			kwargs = {
 				'fig':fig,
