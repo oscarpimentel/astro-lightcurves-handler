@@ -33,7 +33,7 @@ def plot_lightcurve(ax, lcobj, b, label,
 	obs = lcobjb.obs[valid_indexs]
 	obse = lcobjb.obse[valid_indexs]
 	color = _C.COLOR_DICT[b] if not b is None else 'k'
-	bars.plot_std_bar(ax, new_days, obs, obse,
+	bars.plot_std_percentile_bar(ax, new_days, obs, obse,
 		color=color,
 		alpha=alpha,
 		)
