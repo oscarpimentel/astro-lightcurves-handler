@@ -105,6 +105,7 @@ class LCDataset():
 	def split(self, to_split_lcset_name,
 		shuffle=SHUFFLE,
 		random_state=RANDOM_STATE,
+		outlier_obj_names=[],
 		):
 		to_split_lcset = self[to_split_lcset_name]
 		class_names = to_split_lcset.class_names
@@ -113,6 +114,7 @@ class LCDataset():
 		obj_names_kdict, class_names, kfolds = splits.stratifiedf_kfold_cyclic_311(obj_names, obj_classes,
 			shuffle=shuffle,
 			random_state=random_state,
+			outlier_obj_names=outlier_obj_names,
 			prefix_str=f'{to_split_lcset_name}_'
 			)
 		self.kfolds = kfolds

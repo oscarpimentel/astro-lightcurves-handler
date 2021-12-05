@@ -164,6 +164,10 @@ class LightCurveDictionaryCreator():
 			curve[:,OBSE_INDEX] = flux_error
 			return curve
 
+	def get_obj_names(self, class_name):
+		obj_names = list(self.labels_df[self.labels_df[self.df_index_names['label']]==class_name].index)
+		return obj_names
+
 	###################################################################################################################################################
 
 	def export_dictionary(self, description:str, save_folder:str,
@@ -266,7 +270,7 @@ class LightCurveDictionaryCreator():
 				else:
 					pass
 					#print(lcobj_name)
-				bar(f'obj={lcobj_name}; y={y}; c={self.class_names[y]}; lengths_bdict={lcobj.get_length_bdict()}; correct_samples (any-band>={any_band_points})={correct_samples:,}')
+				bar(f'obj={lcobj_name}; y={y}; c={self.class_names[y]}; lengths_bdict={lcobj.get_length_bdict()}; correct_samples={correct_samples:,} (any-band>={any_band_points})')
 					
 			except KeyboardInterrupt:
 				bar.done()
