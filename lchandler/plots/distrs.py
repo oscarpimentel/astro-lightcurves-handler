@@ -13,11 +13,9 @@ import pandas as pd
 
 def plot_class_distribution(lcdataset, lcset_names,
 	figsize=None,
-	uses_log_scale=1,
+	uses_log_scale=True,
 	caption=None,
 	):
-	#for ks,lcset_name in enumerate([lcset_name1, lcset_name2]):
-	#ax = axs[ks]
 	lcset = lcdataset[lcset_names[0]]
 	lcobj_classes = lcset.get_lcobj_classes()
 	pop_dict = {lcset_name:lcdataset[lcset_name].get_lcobj_classes() for lcset_name in lcset_names}
@@ -32,7 +30,6 @@ def plot_class_distribution(lcdataset, lcset_names,
 		'figsize':figsize,
 		}
 	fig, ax = cplots.plot_hist_labels(pop_dict, lcset.class_names, **plt_kwargs)
-		
 	fig.tight_layout()
 	fig.text(.1,.1, caption)
 	plt.plot()
@@ -50,13 +47,14 @@ def plot_values_distribution(lcdataset, set_name:str, attr:str,
 	xlabel='?',
 	p=0.5,
 	figsize:tuple=(15,10),
+	f=lambda x:x,
 	):
 	lcset = lcdataset[set_name]
 	fig, axes = plt.subplots(len(lcset.class_names), len(lcset.band_names), figsize=figsize)
 	for kb,b in enumerate(lcset.band_names):
 		for kc,c in enumerate(lcset.class_names):
 			ax = axes[kc,kb]
-			plot_dict = {c:dropout_extreme_percentiles(lcset.get_all_values_b(b, attr, c), p, mode='upper')[0]}
+			plot_dict = {c:dropout_extreme_percentiles(f(lcset.get_all_values_b(b, attr, c)), p, mode='upper')[0]}
 			plot_df = pd.DataFrame.from_dict(plot_dict, orient='columns')
 			kwargs = {
 				'fig':fig,
@@ -65,7 +63,7 @@ def plot_values_distribution(lcdataset, set_name:str, attr:str,
 				'ylabel':'' if kb==0 else None,
 				'title':f'band={b}' if kc==0 else '',
 				#'xlim':(None if c=='SLSN' else (0, 150)) if attr=='obs' else None,
-				#'xlim':[0, 80],
+				#'xlim':[-6, -2],
 				#'bins':500,#100 if c=='SLSN' else 500,
 				'uses_density':True,
 				'legend_loc':'upper right',

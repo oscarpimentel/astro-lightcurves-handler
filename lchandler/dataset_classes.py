@@ -111,11 +111,12 @@ class LCDataset():
 		class_names = to_split_lcset.class_names
 		obj_names = to_split_lcset.get_lcobj_names()
 		obj_classes = [class_names[to_split_lcset[obj_name].y] for obj_name in obj_names]
-		obj_names_kdict, class_names, kfolds = splits.stratifiedf_kfold_cyclic_311(obj_names, obj_classes,
+		obj_names_kdict, class_names, kfolds, populations_cdict = splits.stratifiedf_kfold_cyclic_311(obj_names, obj_classes,
 			shuffle=shuffle,
 			random_state=random_state,
 			outlier_obj_names=outlier_obj_names,
-			prefix_str=f'{to_split_lcset_name}_'
+			prefix_str=f'{to_split_lcset_name}_',
+			returns_populations_cdict=True,
 			)
 		self.kfolds = kfolds
 		for new_set_name in obj_names_kdict.keys():
@@ -124,7 +125,7 @@ class LCDataset():
 			for obj_name in obj_names:
 				lcobj = to_split_lcset[obj_name].copy()
 				self[new_set_name].data.update({obj_name:lcobj})
-		return
+		return populations_cdict
 
 	def sigma_clipping(self, lcset_name, new_lcset_name,
 		sigma_n:int=1,
@@ -301,7 +302,7 @@ class LCSet():
 
 	def get_class_balanced_weights_cdict(self):
 		pop_cdict = self.get_nof_samples_cdict()
-		w = {c:1/(pop_cdict[c]*len(self.class_names)) for c in self.class_names} # 1/(Nc*C)
+		w = {c:1/(pop_cdict[c]*len(self.class_names)) for c in self.class_names} # 1/(N_c*C)
 		return w
 
 	def get_mean_length_df_bdict(self,
@@ -485,7 +486,8 @@ class LCSet():
 	def get_all_values_b(self, b:str, attr:str,
 		target_class:str=None,
 		):
-		values = [getattr(lcobj.get_b(b), attr) for lcobj in self.get_class_lcobjs(target_class)]
+		lcobjs = self.get_class_lcobjs(target_class)
+		values = [getattr(lcobj.get_b(b), attr) for lcobj in lcobjs]
 		values = np.concatenate(values, axis=0)
 		return values
 
@@ -514,9 +516,9 @@ class LCSet():
 		target_class=None,
 		generates_mb=True,
 		):
-		lcobjs = [lcobj for lcobj in self.get_lcobjs() if (target_class is None or target_class==self.class_names[lcobj.y])]
+		lcobjs = self.get_class_lcobjs(target_class)
 		parallel_diff_days = []
-		for lcobj in self.get_class_lcobjs(target_class):
+		for lcobj in lcobjs:
 			parallel_diff_days += [lcobj.get_parallel_diff_days(generates_mb=generates_mb)[b]]
 		return np.concatenate(parallel_diff_days, axis=0)
 
