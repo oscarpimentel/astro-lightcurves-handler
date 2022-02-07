@@ -52,7 +52,7 @@ for method in methods:
 			ax.set_title(title)
 			ax.set_xlabel('time [days]')
 			ax.set_ylabel('observation [flux]')
-			ax.grid(alpha=0.5)
+			ax.grid(alpha=0.0)
 			ax.legend()
 			save_filedir = f'../save/{cfilename}/{lcset_name}/{c}/{lcobj_name}.png'
 			save_fig(save_filedir, fig)
