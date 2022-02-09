@@ -93,8 +93,8 @@ COLOR_DICT = {
 }
 
 CLASSES_STYLES = {
-	'SLSN':{'c':(0.2902, 0.7922, 0.851), 'marker':'^'},
-	'SNIa':{'c':(0.8863, 0.2902, 0.2), 'marker':'D'},
+	'SLSN':{'c':(0.8863, 0.2902, 0.2), 'marker':'^'},
+	'SNIa':{'c':[c/255 for c in (242, 214, 75)], 'marker':'D'},
 	'SNII*':{'c':(0.4157, 0.7451, 0.3098), 'marker':'p'},
-	'SNIbc':{'c':(0.3059, 0.1608, 0.451), 'marker':'o'},
+	'SNIbc':{'c':[c/255 for c in (60, 61, 89)], 'marker':'o'},
 	}
