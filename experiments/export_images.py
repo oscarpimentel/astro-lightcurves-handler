@@ -54,7 +54,7 @@ for method in methods:
 			ax.set_ylabel('observation [flux]')
 			ax.grid(alpha=0.0)
 			ax.legend()
-			save_filedir = f'../save/{cfilename}/{lcset_name}/{c}/{lcobj_name}.png'
-			save_fig(save_filedir, fig)
+			fig.tight_layout()
+			save_fig(fig, f'../save/{cfilename}/{lcset_name}/{c}/{lcobj_name}.pdf')
 			save_time_stamp(f'../save/{cfilename}')
 			#break

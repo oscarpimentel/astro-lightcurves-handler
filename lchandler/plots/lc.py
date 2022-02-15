@@ -23,8 +23,7 @@ def plot_lightcurve(ax, lcobj, b, label,
 	capsize:int=0,
 	x_margin_offset_percent:float=1,
 	y_margin_offset_percent:float=10,
-	label_snr=False,
-	label_len=True,
+	label_format='{label}{synth} ({len}#)',
 	):
 	lcobjb = lcobj.get_b(b) if not b is None else lcobj
 	new_days = lcobjb.days
@@ -39,15 +38,16 @@ def plot_lightcurve(ax, lcobj, b, label,
 		)
 	ax.plot(new_days, obs, ':', color=color, alpha=0.25*alpha)
 
-	labels = [label]
-	labels += [f'snr={lcobjb.get_snr():.3f}'] if label_snr else []
-	synth_label = ' [synth]' if lcobjb.is_synthetic() else ''
-	len_label = f' ({len(obs):,}#)' if label_len else ''
+	new_label = label_format
+	new_label = new_label.replace('{label}', label)
+	new_label = new_label.replace('{len}', f'{len(obs):,}')
+	new_label = new_label.replace('{synth}', ' [synth]' if lcobjb.is_synthetic() else '')
+	new_label = new_label.replace('{snr}', f'snr={lcobjb.get_snr():.3f}')
 	ax.plot(new_days, obs, 'o',
 		color=color,
 		alpha=alpha,
 		markeredgecolor='k' if lcobjb.is_synthetic() else None,
-		label=f'{"; ".join(labels)}{len_label}{synth_label}',
+		label=new_label,
 		)
 	x_margins = get_margin(new_days, x_margin_offset_percent)
 	y_margins = get_margin(obs, y_margin_offset_percent)
