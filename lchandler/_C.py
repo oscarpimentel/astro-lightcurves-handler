@@ -1,5 +1,5 @@
 import numpy as np
-from fuzzytools.matplotlib.colors import hexcolor2rbg
+from fuzzytools.matplotlib.colors import get_rbgcolor
 
 ###################################################################################################################################################
 EPS = 1e-5
@@ -94,8 +94,8 @@ COLOR_DICT = {
 }
 
 CLASSES_STYLES = {
-	'SLSN':{'c':hexcolor2rbg('#F23535'), 'marker':'^', 'markerprop':1.5, 'zorder':0},
+	'SLSN':{'c':get_rbgcolor('#F23535'), 'marker':'^', 'markerprop':1.5, 'zorder':0},
 	'SNIbc':{'c':[c/255 for c in (75, 131, 242)], 'marker':'o', 'markerprop':1, 'zorder':-1},
-	'SNII*':{'c':hexcolor2rbg('#F2A922'), 'marker':'p', 'markerprop':1, 'zorder':-2},
+	'SNII*':{'c':get_rbgcolor('#F2A922'), 'marker':'p', 'markerprop':1, 'zorder':-2},
 	'SNIa':{'c':[c/255 for c in (89, 89, 89)], 'marker':'D', 'markerprop':.9, 'zorder':-3},
 	}
