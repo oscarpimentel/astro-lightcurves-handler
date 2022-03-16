@@ -150,7 +150,7 @@ class LCDataset():
 				total_deleted_points[b] += deleted_points
 		
 			lcset.clean_empty_obs_keys()
-			lcset.reset_all_day_offset_serial()
+			lcset.reset_all_day_offset_serial() # remove day offset!
 			sigma_samples = len(lcset.get_all_values_b(b, 'obse'))
 			#print(f'sigma_samples={sigma_samples:,}; total_deleted_points={total_deleted_points}')
 
@@ -533,7 +533,7 @@ class LCSet():
 		target_class=None,
 		):
 		for lcobj in self.get_class_lcobjs(target_class):
-			lcobj.reset_day_offset_serial()
+			lcobj.reset_day_offset_serial() # remove day offset!
 
 	def generate_all_mb(self,
 		target_class=None,

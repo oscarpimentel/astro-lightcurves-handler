@@ -22,14 +22,12 @@ def plot_class_distribution(lcdataset, lcset_names,
 	title = ''
 	title += 'SNe class distribution'+'\n'
 	title += f'survey={lcset.survey}-{"".join(lcset.band_names)}'+'\n'
-	plt_kwargs = {
-		#'ylabel':'' if ks>0 else None,
-		'title':title[:-1],
-		#'cmap':cc.colorlist_to_cmap([cc.NICE_COLORS_DICT['nice_gray']]),
-		'uses_log_scale':uses_log_scale,
-		'figsize':figsize,
-		}
-	fig, ax = cplots.plot_hist_labels(pop_dict, lcset.class_names, **plt_kwargs)
+	fig, ax = cplots.plot_hist_labels(pop_dict, lcset.class_names,
+		title=title[:-1],
+		uses_log_scale=uses_log_scale,
+		figsize=figsize,
+		)
+
 	fig.tight_layout()
 	fig.text(.1,.1, caption)
 	plt.plot()
@@ -56,23 +54,19 @@ def plot_values_distribution(lcdataset, set_name:str, attr:str,
 			ax = axes[kc,kb]
 			plot_dict = {c:dropout_extreme_percentiles(f(lcset.get_all_values_b(b, attr, c)), p, mode='upper')[0]}
 			plot_df = pd.DataFrame.from_dict(plot_dict, orient='columns')
-			kwargs = {
-				'fig':fig,
-				'ax':ax,
-				'xlabel':xlabel if kc==len(lcset.class_names)-1 else None,
-				'ylabel':'' if kb==0 else None,
-				'title':f'band={b}' if kc==0 else '',
-				#'xlim':(None if c=='SLSN' else (0, 150)) if attr=='obs' else None,
-				#'xlim':[-6, -2],
-				#'bins':500,#100 if c=='SLSN' else 500,
-				'uses_density':True,
-				'legend_loc':'upper right',
-				'cmap':cc.get_cmap(cc.get_default_colorlist()[kc:])
-			}
-			fig, ax = cplots.plot_hist_bins(plot_df, **kwargs)
+			fig, ax = cplots.plot_hist_bins(plot_df,
+				fig=fig,
+				ax=ax,
+				xlabel=xlabel if kc==len(lcset.class_names)-1 else None,
+				ylabel='' if kb==0 else None,
+				title=f'band={b}' if kc==0 else '',
+				uses_density=True,
+				legend_loc='upper right',
+				cmap=cc.colorlist2cmap(cc.get_default_colorlist()[kc:])
+				)
 
-			### multiband colors
-			ax.grid(color=_C.COLOR_DICT[b])
+			### multi-band colors
+			ax.grid(alpha=0)
 			[ax.spines[border].set_color(_C.COLOR_DICT[b]) for border in ['bottom', 'top', 'right', 'left']]
 			[ax.spines[border].set_linewidth(2) for border in ['bottom', 'top', 'right', 'left']]
 	

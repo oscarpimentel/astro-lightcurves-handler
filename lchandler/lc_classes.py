@@ -402,9 +402,12 @@ class SubLCO():
 				new_obs.append(np.sum(self.obs[ddict[k]]*dist))
 				new_obse.append(np.sum(self.obse[ddict[k]]*dist))
 			else:
-				raise Exception(f'no mode {mode}')
+				raise Exception(f'mode={mode}')
 
+		old_len = len(self)
 		self.set_values(new_days, new_obs, new_obse)
+		removed_obs = old_len-len(self)
+		return removed_obs
 
 	def get_snr(self,
 		alpha=10,
@@ -505,7 +508,7 @@ class SubLCO():
 
 class LCO():
 	'''
-	Dataclass object used to store a multiband astronomical light curve
+	Dataclass object used to store a multi-band astronomical light-curve
 	'''
 	def __init__(self,
 		is_flux:bool=True,
@@ -737,8 +740,11 @@ class LCO():
 		dt=CADENCE_THRESHOLD,
 		mode='expectation',
 		):
+		removed_obs = 0
 		for b in self.get_bands():
-			self.get_b(b).clean_small_cadence(dt, mode)
+			removed_obs += self.get_b(b).clean_small_cadence(dt, mode)
+		self.reset_day_offset_serial()
+		return removed_obs
 
 	def get_snr(self):
 		snr_d = {b:self.get_b(b).get_snr() for b in self.get_bands()}

@@ -29,23 +29,21 @@ def plot_class_distribution_df(labels_df, detections_df, label_to_class_dict, df
 			detections_df = detections_df.drop(detections_df[getattr(detections_df, band_index)!=b_key].index)
 			curve_points_samples = detections_df[df_index_names['oid']].map(equiv).dropna()
 			curve_points_samples = curve_points_samples.values
-			to_plot[f'obs samples - band={b}'] = [label_to_class_dict[l] for l in curve_points_samples]
+			to_plot[f'obs samples; band={b}'] = [label_to_class_dict[l] for l in curve_points_samples]
 
 	#print(to_plot)
-	cmap = cc.colorlist_to_cmap([cc.NICE_COLORS_DICT['nice_gray']]+[_C.COLOR_DICT[b] for b in band_names])
 	title = ''
 	# title += f'SNe class distribution'+'\n'
 	title += f'set={survey_name}-{"".join(band_names)}; total #samples={len(label_samples):,}'+'\n'
-	plt_kwargs = {
-		'title':title[:-1],
-		'uses_log_scale':uses_log_scale,
-		'cmap':cmap,
-		'legend_ncol':len(band_names),
-		'rotate_xlabel':rotate_xlabel,
-		'figsize':figsize,
-		'xlabel':'#samples',
-	}
-	fig, ax = cplots.plot_hist_labels(to_plot, class_names, **plt_kwargs)
+	fig, ax = cplots.plot_hist_labels(to_plot, class_names,
+		title=title[:-1],
+		uses_log_scale=uses_log_scale,
+		cmap=cc.colorlist2cmap([cc.NICE_GRAY]+[_C.COLOR_DICT[b] for b in band_names]),
+		legend_ncol=len(band_names),
+		rotate_xlabel=rotate_xlabel,
+		figsize=figsize,
+		xlabel='#samples',
+		)
 	fig.text(.5,.0, caption, fontsize=12)
 	fig.tight_layout()
 	plt.show()

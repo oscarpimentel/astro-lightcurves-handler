@@ -235,48 +235,46 @@ class LightCurveDictionaryCreator():
 		detections_ddf = dd.from_pandas(detections_df, npartitions=npartitions)
 		lcobj_names = sorted(list(set(detections_df.index)))
 		bar = ProgressBar(len(lcobj_names))
+		total_obs = 0
+		removed_obs = 0
+		new_total_obs = 0
 		for k,lcobj_name in enumerate(lcobj_names):
-			try:
-				lcobj = lcc.LCO()
+			lcobj = lcc.LCO()
 
-				### get detections
-				obj_df = detections_ddf.loc[lcobj_name].compute() # FAST
-				for kb,b in enumerate(band_names):
-					band_object_df = obj_df[obj_df[band_dfkey] == self.band_dictionary[b]]
-					original_lc = band_object_df[[self.df_index_names['obs_day'], self.df_index_names['obs'], self.df_index_names['obs_error']]].values
-					band_lc_flux = self.get_band(original_lc)
-					lcobj.add_b(b, band_lc_flux[:,0], band_lc_flux[:,1], band_lc_flux[:,2])
+			### get detections
+			obj_df = detections_ddf.loc[lcobj_name].compute() # FAST
+			for kb,b in enumerate(band_names):
+				band_object_df = obj_df[obj_df[band_dfkey] == self.band_dictionary[b]]
+				original_lc = band_object_df[[self.df_index_names['obs_day'], self.df_index_names['obs'], self.df_index_names['obs_error']]].values
+				band_lc_flux = self.get_band(original_lc)
+				lcobj.add_b(b, band_lc_flux[:,0], band_lc_flux[:,1], band_lc_flux[:,2])
 
-				lcobj.clean_small_cadence()
-				lcobj.reset_day_offset_serial()
+			total_obs += len(lcobj)
+			removed_obs += lcobj.clean_small_cadence() # removes day offset!
+			lcobj.reset_day_offset_serial()
+			new_total_obs += len(lcobj)
 
-				### get label
-				y = self.get_label(self.labels_df, lcobj_name, easy_label_dict)
-				lcobj.set_y(y)
+			### get label
+			y = self.get_label(self.labels_df, lcobj_name, easy_label_dict)
+			lcobj.set_y(y)
 
-				### check lengths
-				if lcobj.any_band_eqover_length(any_band_points):
-					ra, dec = self.get_radec(self.labels_df, lcobj_name)
-					lcobj.ra = ra
-					lcobj.dec = dec
-					if lcobj_name in outliers:
-						lcset_name = 'outliers'
-					# elif lcobj.get_snr()<MIN_SNR:
-					# 	lcset_name = 'faint'
-					else:
-						lcset_name = 'raw'
-					lcdataset[lcset_name].set_lcobj(lcobj_name, lcobj)
-					correct_samples += 1
+			### check lengths
+			if lcobj.any_band_eqover_length(any_band_points):
+				ra, dec = self.get_radec(self.labels_df, lcobj_name)
+				lcobj.ra = ra
+				lcobj.dec = dec
+				if lcobj_name in outliers:
+					lcset_name = 'outliers'
 				else:
-					pass
-					#print(lcobj_name)
-				bar(f'obj={lcobj_name}; y={y}; c={self.class_names[y]}; lengths_bdict={lcobj.get_length_bdict()}; correct_samples={correct_samples:,} (any-band>={any_band_points})')
-					
-			except KeyboardInterrupt:
-				bar.done()
-				print('stopped!')
-				break
+					lcset_name = 'raw'
+				lcdataset[lcset_name].set_lcobj(lcobj_name, lcobj)
+				correct_samples += 1
+			else:
+				pass
+				#print(lcobj_name)
+			bar(f'obj={lcobj_name}; y={y}; c={self.class_names[y]}; lengths_bdict={lcobj.get_length_bdict()}; correct_samples={correct_samples:,} (any-band>={any_band_points})')
 
 		bar.done()
+		print(f'total_obs={total_obs}; removed_obs={removed_obs}; new_total_obs={new_total_obs}; %={removed_obs/total_obs*100:.3f}')
 		save_pickle(save_filedir, lcdataset)
 		return lcdataset
