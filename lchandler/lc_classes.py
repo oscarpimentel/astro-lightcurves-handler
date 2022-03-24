@@ -372,6 +372,7 @@ class SubLCO():
 	def clean_small_cadence(self,
 		dt=CADENCE_THRESHOLD,
 		mode='expectation',
+		verbose=0,
 		):
 		ddict = {}
 		i = 0
@@ -385,6 +386,10 @@ class SubLCO():
 		new_obs = []
 		new_obse = []
 		for k in ddict.keys():
+			if verbose:
+				_days = self.days[ddict[k]]
+				if len(_days)>1:
+					print(_days, max(_days)-min(_days))
 			if mode=='mean':
 				new_days.append(np.mean(self.days[ddict[k]]))
 				new_obs.append(np.mean(self.obs[ddict[k]]))

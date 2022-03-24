@@ -176,6 +176,7 @@ class LightCurveDictionaryCreator():
 		npartitions:int=N_JOBS,
 		any_band_points=MIN_POINTS_LIGHTCURVE_SURVEY_EXPORT,
 		outliers_df=None,
+		saves_dict=False,
 		):
 		class_dfkey = self.df_index_names['label']
 		band_dfkey = self.df_index_names['band']
@@ -276,5 +277,6 @@ class LightCurveDictionaryCreator():
 
 		bar.done()
 		print(f'total_obs={total_obs}; removed_obs={removed_obs}; new_total_obs={new_total_obs}; %={removed_obs/total_obs*100:.3f}')
-		save_pickle(save_filedir, lcdataset)
+		if saves_dict:
+			save_pickle(save_filedir, lcdataset)
 		return lcdataset
