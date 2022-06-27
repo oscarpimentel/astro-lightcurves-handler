@@ -1,2 +1,4 @@
+include version
+include README.md
 include requirements.txt
-include README.txt
+include environment.yml
