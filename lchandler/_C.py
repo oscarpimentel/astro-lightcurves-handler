@@ -30,72 +30,72 @@ OBSE_INDEX = 2
 
 ### DICTS
 INDEXS_DICT = {
-	'days':DAYS_INDEX,
-	'obs':OBS_INDEX,
-	'obse':OBSE_INDEX,
+    'days':DAYS_INDEX,
+    'obs':OBS_INDEX,
+    'obse':OBSE_INDEX,
 }
 SHORT_NAME_DICT = {
-	'days':'days',
-	'd_days':'$\\Delta$days',
+    'days':'days',
+    'd_days':'$\\Delta$days',
 
-	'obs':'obs',
-	'log_obs':'log-obs',
-	'd_obs':'$\\Delta$obs',
+    'obs':'obs',
+    'log_obs':'log-obs',
+    'd_obs':'$\\Delta$obs',
 
-	'obse':'obs errors',
-	'log_obse':'log-obs errors',
-	'd_obse':'$\\Delta$obs errors',
+    'obse':'obs errors',
+    'log_obse':'log-obs errors',
+    'd_obse':'$\\Delta$obs errors',
 }
 LONG_NAME_DICT = {
-	'days':'days',
-	'd_days':'$\\Delta$days',
+    'days':'days',
+    'd_days':'$\\Delta$days',
 
-	'obs':'observations',
-	'log_obs':'log-observations',
-	'd_obs':'$\\Delta$observations',
+    'obs':'observations',
+    'log_obs':'log-observations',
+    'd_obs':'$\\Delta$observations',
 
-	'obse':'observation-errors',
-	'log_obse':'log-observation-errors',
-	'd_obse':'$\\Delta$observation errors',
+    'obse':'observation-errors',
+    'log_obse':'log-observation-errors',
+    'd_obse':'$\\Delta$observation errors',
 }
 SYMBOLS_DICT = {
-	'days':'$\{\{t_{ij}\}_j^{L_i}\}_i^N$',
-	'd_days':'$\{\{\\Delta t_{ij}\}_j\\in J_i\}_{i=1}^N$',
+    'days':'$\{\{t_{ij}\}_j^{L_i}\}_i^N$',
+    'd_days':'$\{\{\\Delta t_{ij}\}_j\\in J_i\}_{i=1}^N$',
 
-	'obs':'$\{\{x_{ij}\}_j^{L_i}\}_i^N$',
-	'log_obs':'$\{\{\log(x_{ij})\}_j^{L_i}\}_i^N$',
-	'd_obs':'$\{\{\\Delta x_{ij}\}_j^{L_i}\}_i^N$',
+    'obs':'$\{\{x_{ij}\}_j^{L_i}\}_i^N$',
+    'log_obs':'$\{\{\log(x_{ij})\}_j^{L_i}\}_i^N$',
+    'd_obs':'$\{\{\\Delta x_{ij}\}_j^{L_i}\}_i^N$',
 
-	'obse':'$\{\{\sigma_{xij}\}_j^{L_i}\}_i^N$',
-	'log_obse':'$\{\{\log(\sigma_{xij})\}_j^{L_i}\}_i^N$',
-	'd_obse':'$\{\{\\Delta \sigma_{xij}\}_j^{L_i}\}_i^N$',
+    'obse':'$\{\{\sigma_{xij}\}_j^{L_i}\}_i^N$',
+    'log_obse':'$\{\{\log(\sigma_{xij})\}_j^{L_i}\}_i^N$',
+    'd_obse':'$\{\{\\Delta \sigma_{xij}\}_j^{L_i}\}_i^N$',
 }
 XLABEL_DICT = {
-	'days':'$t_{ij}$ values',
-	'd_days':'$\\Delta t_{ij}$ values',
+    'days':'$t_{ij}$ values',
+    'd_days':'$\\Delta t_{ij}$ values',
 
-	'obs':'$x_{ij}$ values',
-	'log_obs':'$\log(x_{ij})$ values',
-	'd_obs':'$\\Delta x_{ij}$ values',
+    'obs':'$x_{ij}$ values',
+    'log_obs':'$\log(x_{ij})$ values',
+    'd_obs':'$\\Delta x_{ij}$ values',
 
-	'obse':'$\sigma_{xij}$ values',
-	'log_obse':'$\log(\sigma_{xij})$ values',
-	'd_obse':'$\\Delta \sigma_{xij}$ values',
+    'obse':'$\sigma_{xij}$ values',
+    'log_obse':'$\log(\sigma_{xij})$ values',
+    'd_obse':'$\\Delta \sigma_{xij}$ values',
 }
 
 COLOR_DICT = {
-	'u':'#0396A6',
-	'g':'#6ABE4F',
-	'r':'#F25E5E',
-	'i':'#B6508A',
-	'z':'#F2E749',
-	'y':'#404040',
-	SERIAL_CHAR:'k',
+    'u':'#0396A6',
+    'g':'#6ABE4F',
+    'r':'#F25E5E',
+    'i':'#B6508A',
+    'z':'#F2E749',
+    'y':'#404040',
+    SERIAL_CHAR:'k',
 }
 
 CLASSES_STYLES = {
-	'SLSN':{'c':get_rgbcolor('#F23535'), 'marker':'^', 'markerprop':1.5, 'zorder':0},
-	'SNIbc':{'c':[c/255 for c in (75, 131, 242)], 'marker':'o', 'markerprop':1, 'zorder':-1},
-	'SNII*':{'c':get_rgbcolor('#F2A922'), 'marker':'p', 'markerprop':1, 'zorder':-2},
-	'SNIa':{'c':[c/255 for c in (89, 89, 89)], 'marker':'D', 'markerprop':.9, 'zorder':-3},
-	}
+    'SLSN':{'c':get_rgbcolor('#F23535'), 'marker':'^', 'markerprop':1.5, 'zorder':0},
+    'SNIbc':{'c':[c/255 for c in (75, 131, 242)], 'marker':'o', 'markerprop':1, 'zorder':-1},
+    'SNII*':{'c':get_rgbcolor('#F2A922'), 'marker':'p', 'markerprop':1, 'zorder':-2},
+    'SNIa':{'c':[c/255 for c in (89, 89, 89)], 'marker':'D', 'markerprop':.9, 'zorder':-3},
+    }
